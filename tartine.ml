@@ -84,6 +84,7 @@ let event_loop renderer =
 let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
   let open Operators in
   Sdl.init Sdl.Init.everything >>= fun () ->
+  (* Tsdl_image.Image.init Tsdl_image.Image.Init.(png + jpg) |> ignore; *)
   Sdl.set_hint Sdl.Hint.render_vsync "1" |> ignore;
   Sdl.set_hint Sdl.Hint.render_scale_quality "nearest" |> ignore;
   
@@ -95,6 +96,6 @@ let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
 
   Sdl.destroy_renderer r;
   Sdl.destroy_window w;
-  Image.quit ();
+  (* Tsdl_image.Image.quit (); *)
   Sdl.quit ();
   `Ok ()
