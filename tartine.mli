@@ -1,8 +1,9 @@
 open Tsdl
 
 module Image : sig
+  type t = private { surface: Sdl.surface; texture: Sdl.texture }
   (* quand faut-il détruire la surface/texture ? finalizer *)
-  val load : string -> Sdl.texture
+  val load : string -> t
 end
 
 val event : Sdl.event_type -> 'b Sdl.Event.field -> 'b React.E.t
