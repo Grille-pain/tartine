@@ -24,20 +24,14 @@ type rect = {
   h: float;
 }
 
-type t = private { renderer: Sdl.renderer; window: Sdl.window }
-
-module EltsH = Hashtbl.Make (struct
-  type t = Elt.t
-  let hash e = Hashtbl.hash e.id
-end)
+type t = { renderer: Sdl.renderer; window: Sdl.window }
 
 module EventsH = Hashtbl.Make (struct
   type t = Sdl.event_type
   let hash = Hashtbl.hash
+  let equal = (=)
 end)
 
-
-let elts_table = EltsH.create 255
 let events_table = EventsH.create 255
 
 let event ty field =
@@ -56,14 +50,14 @@ let st () = match !st_ref with
   | None -> failwith "st: Engine not running"
   | Some t -> t
 
-let fps = 60.
-let wait_time = 1000. /. fps
-let current_time = 0l
-let delay = ref 0.
+let fps = 60l
+let wait_time = Int32.(1000l / fps)
+let delay = ref 0l
 
 let event_loop renderer =
-  let ev = Event.create () in
+  let ev = Sdl.Event.create () in
   let rec loop () =
+    let start_time = Sdl.get_ticks () in
     send_tick ();
     Sdl.pump_events ();
     while Sdl.poll_event (Some ev) do
@@ -71,31 +65,36 @@ let event_loop renderer =
           |> List.iter ((|>) ev)
       with Not_found -> ()
     done;
-    let tm = Sdl.get_ticks () in
-    delay := Int32.(!delay + (wait_time - (tm - !current_time)));
-    send_step (if 0l <= delay then
-                 Int32.(max 1l delay) else
-                 Int32.(min 100l delay));
+    let end_time = Sdl.get_ticks () in
+    delay := Int32.(!delay + (wait_time - (end_time - start_time)));
+    send_step (if 0l <= !delay then
+                 Int32.(max 1l !delay) else
+                 Int32.(min 100l !delay));
     Sdl.render_present renderer;
-    current_time := Sdl.get_ticks ()
   in
   loop ()
 
 let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
   let open Operators in
-  Sdl.init Sdl.Init.everything >>= fun () ->
-  (* Tsdl_image.Image.init Tsdl_image.Image.Init.(png + jpg) |> ignore; *)
-  Sdl.set_hint Sdl.Hint.render_vsync "1" |> ignore;
-  Sdl.set_hint Sdl.Hint.render_scale_quality "nearest" |> ignore;
-  
-  Sdl.create_window_and_renderer ~w ~h
-    (if fullscreen then Sdl.Window.(fullscreen + flags) else flags) >>= fun (w, r) ->
+  let main () =
+    Sdl.init Sdl.Init.everything >>= fun () ->
+    (* Tsdl_image.Image.init Tsdl_image.Image.Init.(png + jpg) |> ignore; *)
+    Sdl.set_hint Sdl.Hint.render_vsync "1" |> ignore;
+    Sdl.set_hint Sdl.Hint.render_scale_quality "nearest" |> ignore;
 
-  st_ref := { renderer = r; window = w };
-  event_loop r;
+    Sdl.create_window_and_renderer ~w ~h
+      (if fullscreen then Sdl.Window.(fullscreen + flags) else flags) >>= fun (w, r) ->
 
-  Sdl.destroy_renderer r;
-  Sdl.destroy_window w;
-  (* Tsdl_image.Image.quit (); *)
-  Sdl.quit ();
-  `Ok ()
+    st_ref := Some { renderer = r; window = w };
+    event_loop r;
+
+    Sdl.destroy_renderer r;
+    Sdl.destroy_window w;
+    (* Tsdl_image.Image.quit (); *)
+    Sdl.quit ();
+    `Ok ()
+  in
+  match main () with
+  | `Ok () -> ()
+  | `Error err -> Printf.eprintf "%s\n%!" err
+

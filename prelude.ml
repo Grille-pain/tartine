@@ -3,6 +3,7 @@ module Int32 = struct
   
   let (+) = Int32.add
   let (-) = Int32.sub
+  let (/) = Int32.div
 
   let max a b = if a < b then b else a
   let min a b = if a < b then a else b
