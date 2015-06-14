@@ -1,26 +1,25 @@
 open Tsdl
+open Tartine
 
-module Elt : sig
-  type t = private {
-    id: int;
-    src: rect;
-    scale: float;
-    rot: float;
-    center: point;
-    hflip: bool; vflip: bool;
-    
-    image: Image.t;
-  }
+type t = private {
+  id: int;
+  src: rect;
+  scale: float;
+  angle: float;
+  center: point;
+  hflip: bool; vflip: bool;
 
-  val create : Image.t -> t
+  image: Image.t;
+}
 
-  val src : rect -> t -> t
-  val scale : float -> t -> t
-  val rot : float -> t -> t
-  val center : point -> t -> t
-  val hflip : bool -> t -> t
-  val vflip : bool -> t -> t
-  val reset_transform : t -> t
+val create : Image.t -> t
 
-  val render : t -> rect -> unit
-end
+val src : rect -> t -> t
+val scale : float -> t -> t
+val angle : float -> t -> t
+val center : point -> t -> t
+val hflip : bool -> t -> t
+val vflip : bool -> t -> t
+val reset_transform : t -> t
+
+val render : Tartine.t -> t -> dst:rect -> unit Sdl.result
