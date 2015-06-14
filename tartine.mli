@@ -21,6 +21,10 @@ type rect = {
   h: float;
 }
 
+module Operators : sig
+  val (>>=) : 'a Sdl.result -> ('a -> 'b Sdl.result) -> 'b Sdl.result
+end
+
 module Elt : sig
   type t = private {
     id: int;
