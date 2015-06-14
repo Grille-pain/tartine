@@ -21,7 +21,7 @@ type rect = {
 }
 
 module Elt : sig
-  type elt = private {
+  type t = private {
     id: int;
     src: rect;
     scale: float;
@@ -32,16 +32,16 @@ module Elt : sig
     image: Sdl.texture;
   }
 
-  val create : Sdl.texture -> elt
+  val create : Sdl.texture -> t
 
-  val src : rect -> elt -> elt
-  val scale : float -> elt -> elt
-  val rot : float -> elt -> elt
-  val center : point -> elt -> elt
-  val hflip : bool -> elt -> elt
-  val vflip : bool -> elt -> elt
-  val reset_transform : elt -> elt
+  val src : rect -> t -> t
+  val scale : float -> t -> t
+  val rot : float -> t -> t
+  val center : point -> t -> t
+  val hflip : bool -> t -> t
+  val vflip : bool -> t -> t
+  val reset_transform : t -> t
 end
 
-val render : Elt.elt -> rect -> unit
+val render : Elt.t -> rect -> unit
 val run : (unit -> unit) -> unit
