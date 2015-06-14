@@ -49,4 +49,10 @@ module Elt : sig
 end
 
 val render : Elt.t -> rect -> unit
-val run : (unit -> unit) -> unit
+
+type t = private { renderer: Sdl.renderer; window: Sdl.window }
+
+val run :
+  w:int -> h:int -> ?fullscreen:bool -> ?flags:Sdl.Window.flags ->
+  (t -> unit) ->
+  unit
