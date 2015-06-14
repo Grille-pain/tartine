@@ -21,8 +21,10 @@ type t = private { renderer: Sdl.renderer; window: Sdl.window }
 
 val event : Sdl.event_type -> 'b Sdl.Event.field -> 'b React.E.t
 val tick : unit React.E.t
+val step : int32 React.S.t
+
+val st : unit -> t
 
 val run :
   w:int -> h:int -> ?fullscreen:bool -> ?flags:Sdl.Window.flags ->
-  (t -> unit) ->
-  unit
+  unit -> unit
