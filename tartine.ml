@@ -56,8 +56,10 @@ let event_loop r w =
   let ev = Sdl.Event.create () in
   let rec loop () =
     let start_time = Sdl.get_ticks () in
+    let quit = ref false in
     Sdl.pump_events ();
     while Sdl.poll_event (Some ev) do
+      if Sdl.Event.(get ev typ = quit) then quit := true;
       try EventsH.find events_table Sdl.Event.(get ev typ)
           |> List.iter ((|>) ev)
       with Not_found -> ()
@@ -73,6 +75,7 @@ let event_loop r w =
                 frame_time = step;
                 total_time = end_time; };
     Sdl.render_present r;
+    if not !quit then loop ();
   in
   loop ()
 
@@ -99,3 +102,7 @@ let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
   | `Ok () -> ()
   | `Error err -> Printf.eprintf "%s\n%!" err
 
+let quit () =
+  let e = Sdl.Event.create () in
+  Sdl.Event.set e Sdl.Event.typ Sdl.Event.quit;
+  Sdl.push_event e |> ignore

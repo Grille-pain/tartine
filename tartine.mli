@@ -28,3 +28,5 @@ val tick : t React.E.t
 val run :
   w:int -> h:int -> ?fullscreen:bool -> ?flags:Sdl.Window.flags ->
   unit -> unit
+
+val quit : unit -> unit
