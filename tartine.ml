@@ -51,6 +51,7 @@ let tick, send_tick = React.E.create ()
 let fps = 60l
 let wait_time = Int32.(1000l / fps)
 let delay = ref 0l
+let step = ref wait_time
 
 let event_loop r w =
   let open Operators in
@@ -65,16 +66,16 @@ let event_loop r w =
           |> List.iter ((|>) ev)
       with Not_found -> ()
     done;
-    let end_time = Sdl.get_ticks () in
-    delay := Int32.(!delay + (wait_time - (end_time - start_time)));
-    let step =
-      if 0l <= !delay
-      then Int32.(max 1l !delay)
-      else Int32.(min 100l !delay) in
     send_tick { renderer = r;
                 window = w;
-                frame_time = step;
-                total_time = end_time; };
+                frame_time = !step;
+                total_time = start_time; };
+    let end_time = Sdl.get_ticks () in
+    delay := Int32.(!delay + (wait_time - (end_time - start_time)));
+    step :=
+      if 0l <= !delay
+      then Int32.(max 1l !delay)
+      else Int32.(min 100l !delay);
     Sdl.render_present r;
     Sdl.render_clear r >>= fun () ->
     if not !quit then loop () else return ();
