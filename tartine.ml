@@ -24,7 +24,10 @@ type rect = {
   h: float;
 }
 
-type t = { renderer: Sdl.renderer; window: Sdl.window }
+type t = { renderer: Sdl.renderer;
+           window: Sdl.window;
+           frame_time: int32;
+           total_time: int32; }
 
 module EventsH = Hashtbl.Make (struct
   type t = Sdl.event_type
@@ -44,21 +47,15 @@ let event ty field =
   e
 
 let tick, send_tick = React.E.create ()
-let step, send_step = React.S.create 0l
-let st_ref = ref None
-let st () = match !st_ref with
-  | None -> failwith "st: Engine not running"
-  | Some t -> t
 
 let fps = 60l
 let wait_time = Int32.(1000l / fps)
 let delay = ref 0l
 
-let event_loop renderer =
+let event_loop r w =
   let ev = Sdl.Event.create () in
   let rec loop () =
     let start_time = Sdl.get_ticks () in
-    send_tick ();
     Sdl.pump_events ();
     while Sdl.poll_event (Some ev) do
       try EventsH.find events_table Sdl.Event.(get ev typ)
@@ -67,10 +64,15 @@ let event_loop renderer =
     done;
     let end_time = Sdl.get_ticks () in
     delay := Int32.(!delay + (wait_time - (end_time - start_time)));
-    send_step (if 0l <= !delay then
-                 Int32.(max 1l !delay) else
-                 Int32.(min 100l !delay));
-    Sdl.render_present renderer;
+    let step =
+      if 0l <= !delay
+      then Int32.(max 1l !delay)
+      else Int32.(min 100l !delay) in
+    send_tick { renderer = r;
+                window = w;
+                frame_time = step;
+                total_time = end_time; };
+    Sdl.render_present r;
   in
   loop ()
 
@@ -85,8 +87,7 @@ let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
     Sdl.create_window_and_renderer ~w ~h
       (if fullscreen then Sdl.Window.(fullscreen + flags) else flags) >>= fun (w, r) ->
 
-    st_ref := Some { renderer = r; window = w };
-    event_loop r;
+    event_loop r w; 
 
     Sdl.destroy_renderer r;
     Sdl.destroy_window w;

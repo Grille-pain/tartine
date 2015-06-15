@@ -17,13 +17,13 @@ type rect = {
   h: float;
 }
 
-type t = private { renderer: Sdl.renderer; window: Sdl.window }
+type t = private { renderer: Sdl.renderer;
+                   window: Sdl.window;
+                   frame_time: int32;
+                   total_time: int32; }
 
 val event : Sdl.event_type -> 'b Sdl.Event.field -> 'b React.E.t
-val tick : unit React.E.t
-val step : int32 React.S.t
-
-val st : unit -> t
+val tick : t React.E.t
 
 val run :
   w:int -> h:int -> ?fullscreen:bool -> ?flags:Sdl.Window.flags ->
