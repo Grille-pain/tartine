@@ -53,6 +53,7 @@ let wait_time = Int32.(1000l / fps)
 let delay = ref 0l
 
 let event_loop r w =
+  let open Operators in
   let ev = Sdl.Event.create () in
   let rec loop () =
     let start_time = Sdl.get_ticks () in
@@ -75,7 +76,8 @@ let event_loop r w =
                 frame_time = step;
                 total_time = end_time; };
     Sdl.render_present r;
-    if not !quit then loop ();
+    Sdl.render_clear r >>= fun () ->
+    if not !quit then loop () else return ();
   in
   loop ()
 
@@ -90,7 +92,7 @@ let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
     Sdl.create_window_and_renderer ~w ~h
       (if fullscreen then Sdl.Window.(fullscreen + flags) else flags) >>= fun (w, r) ->
 
-    event_loop r w; 
+    event_loop r w >>= fun () ->
 
     Sdl.destroy_renderer r;
     Sdl.destroy_window w;
