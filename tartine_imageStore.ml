@@ -1,7 +1,7 @@
-open Prelude
-open Prelude.Sdl_result
+open Tartine_utils
+open Tartine_utils.Sdl_result
 
-type t = (string, Image.t) Hashtbl.t
+type t = (string, Tartine_image.t) Hashtbl.t
 
 let load tartine path =
   let dir, path =
@@ -16,7 +16,7 @@ let load tartine path =
       let img_name = Filename.(dir ^/ Toml.to_string v) in
       let k = Toml.Table.Key.to_string k in
       handle_error (fun _ -> ())
-        (Image.load tartine img_name >>= fun img ->
+        (Tartine_image.load tartine img_name >>= fun img ->
          return (Hashtbl.replace h k img))
     with Toml.Value.To.Bad_type _ -> ()
   );

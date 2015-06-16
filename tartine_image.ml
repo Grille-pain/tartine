@@ -1,6 +1,6 @@
 open Tsdl
-open Tartine
-open Prelude.Sdl_result
+open Tartine_engine
+open Tartine_utils.Sdl_result
 
 type t = { surface: Sdl.surface; texture: Sdl.texture }
 

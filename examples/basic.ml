@@ -1,7 +1,8 @@
 open Batteries
 open Tsdl
 open Gg
-open Prelude.Sdl_result
+open Tartine
+open Utils.Sdl_result
 
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode
@@ -23,14 +24,14 @@ let update_position step (rect: Box2.t): Box2.t =
   |> flip Box2.move rect
 
 let escape =
-  Tartine.event Event.key_down Event.keyboard_scancode
+  Engine.event Event.key_down Event.keyboard_scancode
   |> React.E.map (fun ev ->
     if ev = Scancode.escape then
-      Tartine.quit ())
+      Engine.quit ())
 
 let main =
-  Tartine.tick
-  |> Prelude.event_map_init
+  Engine.tick
+  |> Utils.event_map_init
     (fun st -> ImageStore.load st "examples/images"
                |> Hashtbl.map (const Elt.create))
 
@@ -39,9 +40,9 @@ let main =
        let square = Hashtbl.find imgstore "square" in
        let square_dst = ref (Box2.v V2.zero Size2.(v 64. 48.)) in
        fun st ->
-         let step = (Int32.to_float st.Tartine.frame_time) /. 2. in 
+         let step = (Int32.to_float st.Engine.frame_time) /. 2. in 
          square_dst := update_position step !square_dst;
          Elt.render st background background.Elt.src >>= fun () ->
          Elt.render st square !square_dst)
 
-let () = Tartine.run ~w:640 ~h:480 ()
+let () = Engine.run ~w:640 ~h:480 ()

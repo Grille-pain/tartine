@@ -1,7 +1,7 @@
 open Tsdl
 open Gg
-open Tartine
-open Prelude.Sdl_result
+open Tartine_engine
+open Tartine_utils.Sdl_result
 
 type t = {
   id: int;
@@ -11,7 +11,7 @@ type t = {
   center: V2.t;
   hflip: bool; vflip: bool;
 
-  image: Image.t;
+  image: Tartine_image.t;
 }
 
 let box2_to_sdl rect =
@@ -38,7 +38,7 @@ let fresh =
   fun () -> incr i; !i
 
 let create i =
-  let (w,h) = Sdl.get_surface_size i.Image.surface in
+  let (w,h) = Sdl.get_surface_size i.Tartine_image.surface in
   {
     id = fresh ();
     src = Box2.v (V2.v 0. 0.) (Size2.v (float w) (float h));
@@ -57,7 +57,7 @@ let center center t = { t with center }
 let hflip hflip t = { t with hflip }
 let vflip vflip t = { t with vflip }
 let reset_transform t = 
-  let (w,h) = Sdl.get_surface_size t.image.Image.surface in
+  let (w,h) = Sdl.get_surface_size t.image.Tartine_image.surface in
   { t with
     angle = 0.;
     center = V2.v (float (w / 2)) (float (h / 2));
@@ -76,9 +76,9 @@ let render t elt ~dst =
   if elt.angle < 1. && elt.angle > -1. then
     Sdl.render_copy_ex
       ~src ~dst
-      t.renderer elt.image.Image.texture
+      t.renderer elt.image.Tartine_image.texture
       elt.angle center flip
   else
     Sdl.render_copy
       ~src ~dst
-      t.renderer elt.image.Image.texture
+      t.renderer elt.image.Tartine_image.texture
