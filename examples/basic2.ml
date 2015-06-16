@@ -16,15 +16,11 @@ let update_position (rect: Box2.t): Box2.t =
       if orient then 1. else -1.
     else 0. in
 
-  let offset =
-    let open Scancode in
-    V2.v
-      ((kk false left) +. (kk true right))
-      ((kk false up) +. (kk true down))
-    |> v2_normalize
-    |> V2.smul 10.
-  in
-  Box2.move offset rect
+  let open Scancode in
+  V2.v ((kk false left) +. (kk true right)) ((kk false up) +. (kk true down))
+  |> v2_normalize
+  |> V2.smul 10.
+  |> flip Box2.move rect
 
 let escape =
   Tartine.event Event.key_down Event.keyboard_scancode
@@ -32,7 +28,7 @@ let escape =
     if ev = Scancode.escape then
       Tartine.quit ())
 
-let tick =
+let main =
   Tartine.tick
   |> Prelude.event_map_init
     (fun st -> ImageStore.load st "examples/images"
