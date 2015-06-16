@@ -1,2 +1,2 @@
 B _build
-PKG react tsdl tsdl_image
+PKG react tsdl tsdl_image toml
