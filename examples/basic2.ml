@@ -4,7 +4,7 @@ open Tartine.Operators
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode
 
-let update_position (rect: Tartine.rect): Tartine.rect =
+let update_position step (rect: Tartine.rect): Tartine.rect =
   let keyboard_st = Sdl.get_keyboard_state () in
   let kk offset code =
     if Bigarray.Array1.get keyboard_st code = 1 then offset else 0.
@@ -36,8 +36,8 @@ let tick =
     (fun (background, square) ->
        let square_dst = ref Tartine.{ x = 0.; y = 0.; w = 64.; h = 48. } in
        fun st ->
-         Printf.printf "%ld\n%!" st.Tartine.frame_time;
-         square_dst := update_position !square_dst;
+         let step = (Int32.to_float st.Tartine.frame_time) /. 2. in 
+         square_dst := update_position step !square_dst;
          Elt.render st background background.Elt.src >>= fun () ->
          Elt.render st square !square_dst)
 

@@ -44,16 +44,16 @@ let on_move =
   Tartine.event Event.key_down Event.keyboard_scancode
   |> React.S.fold handle Tartine.{ x = 0.; y = 0.; w = 64.; h = 48.}
 
-let on_state r big =
+let on_state r st big =
   let is_press sc =
     Bigarray.Array1.get big sc = 1
   in
   let x, y =
     Scancode.(
-      (if is_press up then (0., -10.) else (0., 0.))
-      |> (fun (x,y) -> if is_press down then (x, y +. 10.) else (x, y))
-      |> (fun (x,y) -> if is_press left then (x -. 10., y) else (x, y))
-      |> (fun (x,y) -> if is_press right then (x +. 10., y) else (x, y))
+      (if is_press up then (0., -.st) else (0., 0.))
+      |> (fun (x,y) -> if is_press down then (x, y +. st) else (x, y))
+      |> (fun (x,y) -> if is_press left then (x -. st, y) else (x, y))
+      |> (fun (x,y) -> if is_press right then (x +. st, y) else (x, y))
       |> (fun (x,y) ->
           if x <> 0. && y <> 0.
           then x /. (sqrt 2.), y /. (sqrt 2.)
@@ -62,18 +62,18 @@ let on_state r big =
 
 let update_state =
   let r = ref Tartine.{ x = 0.; y = 0.; w = 64.; h = 48.} in
-  fun big -> r := on_state !r big; !r
+  fun st big -> r := on_state !r st big; !r
 
 let on_tick =
   let handle t =
-    print_endline (Printf.sprintf "%i%!" (Int32.to_int t.Tartine.frame_time));
     background t >>= fun b ->
     let dst = b.Elt.src in
     Elt.render t b dst >>= fun () ->
     square t >>= fun s ->
     (*  let dst = React.S.value on_move in *)
     let big = Sdl.get_keyboard_state () in
-    let dst = update_state big in
+    let st = (Int32.to_float t.Tartine.frame_time) /. 2. in
+    let dst = update_state st big in
     Elt.render t s dst
   in
   React.E.map handle Tartine.tick
