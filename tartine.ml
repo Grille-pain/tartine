@@ -26,25 +26,12 @@ let wait_time = Int32.(1000l / fps)
    (eg. displayed fps, etc.) *)
 let printing_speed_ratio = 3
 
-type point = {
-  x: float;
-  y: float;
-}
-
-type rect = {
-  x: float;
-  y: float;
-  w: float;
-  h: float;
-}
-
 type t = {
   renderer: Sdl.renderer;
   window: Sdl.window;
   frame_time: int32;
   total_time: int32;
 }
-
 
 module EventsH = Hashtbl.Make (struct
     type t = Sdl.event_type
