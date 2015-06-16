@@ -1,36 +1,37 @@
 open Tsdl
+open Gg
 
 open Tartine
 open Operators
 
 type t = {
   id: int;
-  src: rect;
+  src: Box2.t;
   scale: float;
   angle: float;
-  center: point;
+  center: V2.t;
   hflip: bool; vflip: bool;
 
   image: Image.t;
 }
 
-let rect_to_sdl rect =
-  let x = truncate rect.x in
-  let y = truncate rect.y in
-  let w = truncate rect.w in
-  let h = truncate rect.h in
+let box2_to_sdl rect =
+  let x = truncate @@ Box2.ox rect in
+  let y = truncate @@ Box2.oy rect in
+  let w = truncate @@ Box2.w rect in
+  let h = truncate @@ Box2.h rect in
   Sdl.Rect.create ~x ~y ~w ~h
 
-let rect_from_sdl rect =
+let box2_from_sdl rect =
   let x = float @@ Sdl.Rect.x rect in
   let y = float @@ Sdl.Rect.y rect in
   let w = float @@ Sdl.Rect.w rect in
   let h = float @@ Sdl.Rect.h rect in
-  { x; y; w; h }
+  Box2.v (V2.v x y) (Size2.v w h)
 
-let point_to_sdl (point : Tartine.point) =
-  let x = truncate point.x in
-  let y = truncate point.y in
+let v2_to_sdl (point: V2.t) =
+  let x = truncate (V2.x point) in
+  let y = truncate (V2.y point) in
   Sdl.Point.create ~x ~y
 
 let fresh =
@@ -41,12 +42,11 @@ let create i =
   let (w,h) = Sdl.get_surface_size i.Image.surface in
   {
     id = fresh ();
-    src = { x = 0.; y = 0.; w = float w; h = float h};
+    src = Box2.v (V2.v 0. 0.) (Size2.v (float w) (float h));
     scale = 1.;
     angle = 0.;
-    center = { x = float (w / 2); y = float (h /2) };
+    center = V2.v (float (w / 2)) (float (h / 2));
     hflip = false; vflip = false;
-
 
     image = i;
   }
@@ -61,14 +61,14 @@ let reset_transform t =
   let (w,h) = Sdl.get_surface_size t.image.Image.surface in
   { t with
     angle = 0.;
-    center = { x = float (w / 2); y = float (h / 2) };
+    center = V2.v (float (w / 2)) (float (h / 2));
     hflip = false; vflip = false
   }
 
 let render t elt ~dst =
-  let src = rect_to_sdl elt.src in
-  let dst = rect_to_sdl dst in
-  let center = Some (point_to_sdl elt.center) in
+  let src = box2_to_sdl elt.src in
+  let dst = box2_to_sdl dst in
+  let center = Some (v2_to_sdl elt.center) in
   let flip =
     Sdl.Flip.
       ((if elt.hflip then Sdl.Flip.horizontal else Sdl.Flip.none)

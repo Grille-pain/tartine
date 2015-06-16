@@ -1,1 +1,1 @@
-<*>: package(tsdl, react, batteries, toml)
+<*>: package(tsdl, react, gg, batteries, toml)

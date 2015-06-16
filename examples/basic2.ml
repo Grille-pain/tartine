@@ -1,27 +1,30 @@
 open Batteries
 open Tsdl
+open Gg
 open Tartine.Operators
 
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode
 
-let update_position (rect: Tartine.rect): Tartine.rect =
+let v2_normalize v =
+  if v <> V2.zero then V2.unit v else v
+
+let update_position (rect: Box2.t): Box2.t =
   let keyboard_st = Sdl.get_keyboard_state () in
-  let kk offset code =
-    if Bigarray.Array1.get keyboard_st code = 1 then offset else 0.
-  in
+  let kk orient code =
+    if Bigarray.Array1.get keyboard_st code = 1 then
+      if orient then 1. else -1.
+    else 0. in
 
-  let x, y =
+  let offset =
     let open Scancode in
-    ((kk (-10.) left) +. (kk 10. right), (kk (-10.) up) +. (kk 10. down))
+    V2.v
+      ((kk false left) +. (kk true right))
+      ((kk false up) +. (kk true down))
+    |> v2_normalize
+    |> V2.smul 10.
   in
-
-  let offset_x, offset_y =
-    if x <> 0. && y <> 0. then
-      x /. (sqrt 2.), y /. (sqrt 2.) else
-      x, y
-  in
-  Tartine.{ rect with x = rect.x +. offset_x; y = rect.y +. offset_y }
+  Box2.move offset rect
 
 let escape =
   Tartine.event Event.key_down Event.keyboard_scancode
@@ -38,7 +41,7 @@ let tick =
     (fun imgstore ->
        let background = Hashtbl.find imgstore "background" in
        let square = Hashtbl.find imgstore "square" in
-       let square_dst = ref Tartine.{ x = 0.; y = 0.; w = 64.; h = 48. } in
+       let square_dst = ref (Box2.v V2.zero Size2.(v 64. 48.)) in
        fun st ->
          Printf.printf "\x1B[8D%ld%!" st.Tartine.frame_time;
          square_dst := update_position !square_dst;

@@ -2,7 +2,7 @@
 
 OCAMLBUILD := ocamlbuild -classic-display -use-ocamlfind -use-menhir -cflags "-g" -lflags "-g"
 MAIN       := main
-EXAMPLES   := basic basic2
+EXAMPLES   := basic2
 
 all:
 	$(OCAMLBUILD) $(MAIN).native
