@@ -1,3 +1,4 @@
+open Batteries
 open Tsdl
 open Tartine.Operators
 
@@ -31,18 +32,15 @@ let escape =
 let tick =
   Tartine.tick
   |> Prelude.event_map_init
-    (fun st ->
-       (* load images *)
-       handle_error (fun msg -> Printf.eprintf "%s\n" msg; exit 1) (
-         Image.load st "examples/images/background.bmp" >>= fun b ->
-         Image.load st "examples/images/square.bmp" >>= fun s ->
-         return (Elt.create b, Elt.create s)
-       ))
+    (fun st -> ImageStore.load st "examples/images"
+               |> Hashtbl.map (const Elt.create))
 
-    (fun (background, square) ->
+    (fun imgstore ->
+       let background = Hashtbl.find imgstore "background" in
+       let square = Hashtbl.find imgstore "square" in
        let square_dst = ref Tartine.{ x = 0.; y = 0.; w = 64.; h = 48. } in
        fun st ->
-         Printf.printf "%ld\n%!" st.Tartine.frame_time;
+         Printf.printf "\x1B[8D%ld%!" st.Tartine.frame_time;
          square_dst := update_position !square_dst;
          Elt.render st background background.Elt.src >>= fun () ->
          Elt.render st square !square_dst)

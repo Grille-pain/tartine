@@ -1,2 +1,2 @@
 B _build
-PKG react tsdl tsdl_image toml
+PKG batteries react tsdl tsdl_image toml
