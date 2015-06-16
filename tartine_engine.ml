@@ -46,7 +46,7 @@ let send_events ev =
 let ptime step delay frame =
   let open Int32 in
   let actual_fps = (fps * fps * frame) / 1000l in
-  Printf.printf "% 8i% 8i% 8i (%d fps)\r%!"
+  Printf.printf "% 8i% 8i% 8i (fps: % 4d)\r%!"
     (to_int step)
     (to_int delay)
     (to_int frame)
@@ -129,6 +129,7 @@ let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
     Sdl.destroy_window w;
     (* Tsdl_image.Image.quit (); *)
     Sdl.quit ();
+    print_endline "\nquit.";
     `Ok ()
   in
   match main () with
