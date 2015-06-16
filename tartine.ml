@@ -9,6 +9,13 @@ module Operators = struct
     | `Ok x -> f x
     | `Error err -> `Error err
 
+  let handle_error (type a)
+      (f: string -> a)
+      (r: a Sdl.result): a =
+    match r with
+    | `Ok x -> x
+    | `Error err -> f err
+
   let return x = `Ok x
 end
 

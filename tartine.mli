@@ -2,6 +2,7 @@ open Tsdl
 
 module Operators : sig
   val (>>=) : 'a Sdl.result -> ('a -> 'b Sdl.result) -> 'b Sdl.result
+  val handle_error : (string -> 'a) -> 'a Sdl.result -> 'a
   val return : 'a -> 'a Sdl.result
 end
 
