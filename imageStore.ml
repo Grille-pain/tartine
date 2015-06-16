@@ -1,5 +1,5 @@
 open Prelude
-open Tartine.Operators
+open Prelude.Sdl_result
 
 type t = (string, Image.t) Hashtbl.t
 

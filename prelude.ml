@@ -1,3 +1,23 @@
+open Tsdl
+
+module Sdl_result = struct
+  let (>>=) (type a) (type b)
+      (r: a Sdl.result)
+      (f: a -> b Sdl.result): b Sdl.result =
+    match r with
+    | `Ok x -> f x
+    | `Error err -> `Error err
+
+  let handle_error (type a)
+      (f: string -> a)
+      (r: a Sdl.result): a =
+    match r with
+    | `Ok x -> x
+    | `Error err -> f err
+
+  let return x = `Ok x
+end
+
 module Int32 = struct
   include Int32
   

@@ -1,25 +1,6 @@
 open Tsdl
 open Prelude
 
-module Operators = struct
-  let (>>=) (type a) (type b)
-      (r: a Sdl.result)
-      (f: a -> b Sdl.result): b Sdl.result =
-    match r with
-    | `Ok x -> f x
-    | `Error err -> `Error err
-
-  let handle_error (type a)
-      (f: string -> a)
-      (r: a Sdl.result): a =
-    match r with
-    | `Ok x -> x
-    | `Error err -> f err
-
-  let return x = `Ok x
-end
-
-
 let fps = 60l
 let wait_time = Int32.(1000l / fps)
 (* How much slower do we need to refresh textual debug informations?
@@ -113,7 +94,7 @@ let send_tick r w frame total =
 
 let event_loop r w =
   let open Int32 in
-  let open Operators in
+  let open Sdl_result in
   let ev = Sdl.Event.create () in
   let rec loop () =
     let delay, frame, total = update_time () in
@@ -128,7 +109,7 @@ let event_loop r w =
 
 
 let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
-  let open Operators in
+  let open Sdl_result in
   let main () =
     Sdl.init Sdl.Init.everything >>= fun () ->
     (* Tsdl_image.Image.init Tsdl_image.Image.Init.(png + jpg) |> ignore; *)

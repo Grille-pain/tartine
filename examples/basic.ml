@@ -1,7 +1,7 @@
 open Batteries
 open Tsdl
 open Gg
-open Tartine.Operators
+open Prelude.Sdl_result
 
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode

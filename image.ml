@@ -1,7 +1,6 @@
 open Tsdl
-
 open Tartine
-open Operators
+open Prelude.Sdl_result
 
 type t = { surface: Sdl.surface; texture: Sdl.texture }
 

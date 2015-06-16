@@ -1,8 +1,7 @@
 open Tsdl
 open Gg
-
 open Tartine
-open Operators
+open Prelude.Sdl_result
 
 type t = {
   id: int;
