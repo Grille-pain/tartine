@@ -9,6 +9,12 @@ module Int32 = struct
   let min a b = if a < b then a else b
 end
 
+module Filename = struct
+  include Filename
+
+  let (^/) = Filename.concat
+end
+
 let event_map_init
     (init: 'a -> 'b)
     (f: 'b -> 'a -> 'c)

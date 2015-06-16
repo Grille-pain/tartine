@@ -6,18 +6,6 @@ module Operators : sig
   val return : 'a -> 'a Sdl.result
 end
 
-type point = {
-  x: float;
-  y: float;
-}
-
-type rect = {
-  x: float;
-  y: float;
-  w: float;
-  h: float;
-}
-
 type t = private { renderer: Sdl.renderer;
                    window: Sdl.window;
                    frame_time: int32;

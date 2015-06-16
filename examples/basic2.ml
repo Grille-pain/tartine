@@ -1,40 +1,43 @@
+open Batteries
 open Tsdl
+open Gg
 open Tartine.Operators
 
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode
 
-let update_position step (rect: Tartine.rect): Tartine.rect =
+let v2_normalize v =
+  if v <> V2.zero then V2.unit v else v
+
+let update_position step (rect: Box2.t): Box2.t =
   let keyboard_st = Sdl.get_keyboard_state () in
-  let kk offset code =
-    if Bigarray.Array1.get keyboard_st code = 1 then offset else 0.
-  in
+  let kk orient code =
+    if Bigarray.Array1.get keyboard_st code = 1 then
+      if orient then 1. else -1.
+    else 0. in
 
-  let x, y =
-    let open Scancode in
-    ((kk (-10.) left) +. (kk 10. right), (kk (-10.) up) +. (kk 10. down))
-  in
+  let open Scancode in
+  V2.v ((kk false left) +. (kk true right)) ((kk false up) +. (kk true down))
+  |> v2_normalize
+  |> V2.smul 10.
+  |> flip Box2.move rect
 
-  let offset_x, offset_y =
-    if x <> 0. && y <> 0. then
-      x /. (sqrt 2.), y /. (sqrt 2.) else
-      x, y
-  in
-  Tartine.{ rect with x = rect.x +. offset_x; y = rect.y +. offset_y }
+let escape =
+  Tartine.event Event.key_down Event.keyboard_scancode
+  |> React.E.map (fun ev ->
+    if ev = Scancode.escape then
+      Tartine.quit ())
 
-let tick =
+let main =
   Tartine.tick
   |> Prelude.event_map_init
-    (fun st ->
-       (* load images *)
-       handle_error (fun msg -> Printf.eprintf "%s\n" msg; exit 1) (
-         Image.load st "examples/images/background.bmp" >>= fun b ->
-         Image.load st "examples/images/square.bmp" >>= fun s ->
-         return (Elt.create b, Elt.create s)
-       ))
+    (fun st -> ImageStore.load st "examples/images"
+               |> Hashtbl.map (const Elt.create))
 
-    (fun (background, square) ->
-       let square_dst = ref Tartine.{ x = 0.; y = 0.; w = 64.; h = 48. } in
+    (fun imgstore ->
+       let background = Hashtbl.find imgstore "background" in
+       let square = Hashtbl.find imgstore "square" in
+       let square_dst = ref (Box2.v V2.zero Size2.(v 64. 48.)) in
        fun st ->
          let step = (Int32.to_float st.Tartine.frame_time) /. 2. in 
          square_dst := update_position step !square_dst;
