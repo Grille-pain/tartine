@@ -22,9 +22,9 @@ end
 
 let fps = 60l
 let wait_time = Int32.(1000l / fps)
-
-let quit = ref false
-
+(* How much slower do we need to refresh textual debug informations?
+   (eg. displayed fps, etc.) *)
+let printing_speed_ratio = 3
 
 type point = {
   x: float;
@@ -63,6 +63,8 @@ let event ty field =
     ((fun sdl_e -> Sdl.Event.get sdl_e field |> send_e) :: handlers);
   e
 
+let quit = ref false
+
 let send_events ev =
   Sdl.pump_events ();
   while Sdl.poll_event (Some ev) do
@@ -73,7 +75,46 @@ let send_events ev =
   done
 
 
-let tick, send_tick = React.E.create ()
+let ptime step delay frame =
+  let open Int32 in
+  let actual_fps = (fps * fps * frame) / 1000l in
+  Printf.printf "% 8i% 8i% 8i (%d fps)\r%!"
+    (to_int step)
+    (to_int delay)
+    (to_int frame)
+    (to_int actual_fps)
+
+let update_time, print_time =
+  let open Int32 in
+  let stime = ref 0l in
+  let etime = ref 0l in
+  let delay = ref 0l in
+  let step  = ref 0l in
+  let frame_time = ref 0l in
+  (fun () ->
+     etime := Sdl.get_ticks ();
+     frame_time := !etime - !stime;
+     delay := (!delay + (wait_time - !frame_time)) / (of_int 2);
+     step :=
+       if 0l <= !delay
+       then max 1l !frame_time
+       else min 100l !frame_time;
+     stime := Sdl.get_ticks ();
+     !delay, !step, !stime),
+  (fun () -> ptime !step !delay !frame_time)
+
+let slow_print_time =
+  let tick_count = ref 0 in
+  fun st ->
+    if !tick_count >= printing_speed_ratio then (
+      tick_count := 0;
+      print_time ()
+    ); incr tick_count;
+    st
+
+let tick, send_tick =
+  let tick, send_tick = React.E.create () in
+  React.E.map slow_print_time tick, send_tick
 
 let send_tick r w frame total =
   send_tick {
@@ -82,33 +123,6 @@ let send_tick r w frame total =
     frame_time = frame;
     total_time = total;
   }
-
-
-let ptime step delay frame =
-  let open Int32 in
-  let fps = (60l * 60l * frame) / 1000l in
-  Printf.printf "% 8i% 8i% 8i\r%!"
-    (to_int step)
-    (to_int delay)
-    (to_int fps)
-
-let update_time =
-  let open Int32 in
-  let stime = ref 0l in
-  let etime = ref 0l in
-  let delay = ref 0l in
-  let step  = ref 0l in
-  fun () ->
-    etime := Sdl.get_ticks ();
-    let frame_time = !etime - !stime in
-    delay := (!delay + (wait_time - frame_time)) / (of_int 2);
-    step :=
-      if 0l <= !delay
-      then max 1l frame_time
-      else min 100l frame_time;
-    stime := Sdl.get_ticks ();
-    ptime !step !delay frame_time;
-    !delay, !step, !stime
 
 let event_loop r w =
   let open Int32 in
