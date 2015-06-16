@@ -1,82 +1,47 @@
+open Batteries
 open Tsdl
+open Gg
 open Tartine.Operators
 
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode
 
-let cache opt str t =
-  match !opt with
-  | None -> begin
-      match Image.load t str with
-      | `Error e -> `Error e
-      | `Ok i ->
-        let elt = Elt.create i in
-        opt := Some elt; `Ok elt
-    end
-  | Some elt -> `Ok elt
+let v2_normalize v =
+  if v <> V2.zero then V2.unit v else v
 
-let background =
-  let opt = ref None in
-  cache opt "examples/images/background.bmp"
+let update_position step (rect: Box2.t): Box2.t =
+  let keyboard_st = Sdl.get_keyboard_state () in
+  let kk orient code =
+    if Bigarray.Array1.get keyboard_st code = 1 then
+      if orient then 1. else -1.
+    else 0. in
 
-let square =
-  let opt = ref None in
-  cache opt "examples/images/square.bmp"
+  let open Scancode in
+  V2.v ((kk false left) +. (kk true right)) ((kk false up) +. (kk true down))
+  |> v2_normalize
+  |> V2.smul step
+  |> flip Box2.move rect
 
-let on_escape =
-  let handle ev =
-    match Scancode.enum ev with
-    | `Escape -> Tartine.quit ()
-    | _ -> ()
-  in
+let escape =
   Tartine.event Event.key_down Event.keyboard_scancode
-  |> React.E.map handle
+  |> React.E.map (fun ev ->
+    if ev = Scancode.escape then
+      Tartine.quit ())
 
-let on_move =
-  let handle r ev =
-    match Scancode.enum ev with
-    | `W -> Tartine.{ r with y = r.y -. 10. }
-    | `S -> Tartine.{ r with y = r.y +. 10. }
-    | `A -> Tartine.{ r with x = r.x -. 10. }
-    | `D -> Tartine.{ r with x = r.x +. 10. }
-    | _ -> r
-  in
-  Tartine.event Event.key_down Event.keyboard_scancode
-  |> React.S.fold handle Tartine.{ x = 0.; y = 0.; w = 64.; h = 48.}
+let main =
+  Tartine.tick
+  |> Prelude.event_map_init
+    (fun st -> ImageStore.load st "examples/images"
+               |> Hashtbl.map (const Elt.create))
 
-let on_state r st big =
-  let is_press sc =
-    Bigarray.Array1.get big sc = 1
-  in
-  let x, y =
-    Scancode.(
-      (if is_press up then (0., -.st) else (0., 0.))
-      |> (fun (x,y) -> if is_press down then (x, y +. st) else (x, y))
-      |> (fun (x,y) -> if is_press left then (x -. st, y) else (x, y))
-      |> (fun (x,y) -> if is_press right then (x +. st, y) else (x, y))
-      |> (fun (x,y) ->
-          if x <> 0. && y <> 0.
-          then x /. (sqrt 2.), y /. (sqrt 2.)
-          else x, y))
-  in Tartine.{ r with x = r.x +. x; y = r.y +. y }
+    (fun imgstore ->
+       let background = Hashtbl.find imgstore "background" in
+       let square = Hashtbl.find imgstore "square" in
+       let square_dst = ref (Box2.v V2.zero Size2.(v 64. 48.)) in
+       fun st ->
+         let step = (Int32.to_float st.Tartine.frame_time) /. 2. in 
+         square_dst := update_position step !square_dst;
+         Elt.render st background background.Elt.src >>= fun () ->
+         Elt.render st square !square_dst)
 
-let update_state =
-  let r = ref Tartine.{ x = 0.; y = 0.; w = 64.; h = 48.} in
-  fun st big -> r := on_state !r st big; !r
-
-let on_tick =
-  let handle t =
-    background t >>= fun b ->
-    let dst = b.Elt.src in
-    Elt.render t b dst >>= fun () ->
-    square t >>= fun s ->
-    (*  let dst = React.S.value on_move in *)
-    let big = Sdl.get_keyboard_state () in
-    let st = (Int32.to_float t.Tartine.frame_time) /. 2. in
-    let dst = update_state st big in
-    Elt.render t s dst
-  in
-  React.E.map handle Tartine.tick
-
-let () =
-  Tartine.run ~w:640 ~h:480 ()
+let () = Tartine.run ~w:640 ~h:480 ()
