@@ -86,10 +86,11 @@ let send_tick r w frame total =
 
 let ptime step delay frame =
   let open Int32 in
+  let fps = (60l * 60l * frame) / 1000l in
   Printf.printf "% 8i% 8i% 8i\r%!"
     (to_int step)
     (to_int delay)
-    (to_int frame)
+    (to_int fps)
 
 let update_time =
   let open Int32 in
