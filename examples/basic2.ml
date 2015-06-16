@@ -22,6 +22,12 @@ let update_position (rect: Tartine.rect): Tartine.rect =
   in
   Tartine.{ rect with x = rect.x +. offset_x; y = rect.y +. offset_y }
 
+let escape =
+  Tartine.event Event.key_down Event.keyboard_scancode
+  |> React.E.map (fun ev ->
+    if ev = Scancode.escape then
+      Tartine.quit ())
+
 let tick =
   Tartine.tick
   |> Prelude.event_map_init
