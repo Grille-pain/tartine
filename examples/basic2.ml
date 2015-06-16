@@ -19,7 +19,7 @@ let update_position step (rect: Box2.t): Box2.t =
   let open Scancode in
   V2.v ((kk false left) +. (kk true right)) ((kk false up) +. (kk true down))
   |> v2_normalize
-  |> V2.smul 10.
+  |> V2.smul step
   |> flip Box2.move rect
 
 let escape =
