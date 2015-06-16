@@ -7,23 +7,23 @@ module Engine : sig
                      window: Sdl.window;
                      frame_time: int32;
                      total_time: int32; }
-                   
+
   (** Obtain a react event corresponding to some SDL event. *)
   val event : Sdl.event_type -> 'b Sdl.Event.field -> 'b React.E.t
 
   (** The event corresponding to the main loop. Emits one event per frame,
-      i.e. 60 per second. 
+      i.e. 60 events per second.
 
       You probably want to use [Util.event_map_init] on this event to plug in
       your main code.
   *)
   val tick : t React.E.t
-      
+
   (** Run the engine. Must be called at some point. *)
   val run :
     w:int -> h:int -> ?fullscreen:bool -> ?flags:Sdl.Window.flags ->
     unit -> unit
-    
+
   (** Call this to stop the engine. *)
   val quit : unit -> unit
 end
@@ -82,16 +82,16 @@ module ImageStore : sig
   type t = (string, Image.t) Hashtbl.t
 
   (** [load st path] loads an image store into memory.
-      
+
       - If [path] points to a directory, then the store described by
         [path]/imagestore.toml is loaded;
       - If [path] points to a file, the file is parsed as Toml and used
         as describing a store.
-      
+
       Images failing to load and invalid keys are ignored.
   *)
   val load : Engine.t -> string -> t
-  
+
   (** Standard hashtable lookup *)
   val find : string -> t -> Image.t
 end
@@ -127,11 +127,11 @@ module Utils : sig
     val ( - ) : int32 -> int32 -> int32
     val ( * ) : int32 -> int32 -> int32
     val ( / ) : int32 -> int32 -> int32
-      
+
     val max : int32 -> int32 -> int32
     val min : int32 -> int32 -> int32
   end
-  
+
   module Filename : sig
     include module type of Filename
     val ( ^/ ) : string -> string -> string

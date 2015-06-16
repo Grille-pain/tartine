@@ -20,7 +20,7 @@ end
 
 module Int32 = struct
   include Int32
-  
+
   let (+) = Int32.add
   let (-) = Int32.sub
   let ( * ) = Int32.mul

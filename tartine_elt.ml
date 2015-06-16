@@ -56,7 +56,7 @@ let angle angle t = { t with angle }
 let center center t = { t with center }
 let hflip hflip t = { t with hflip }
 let vflip vflip t = { t with vflip }
-let reset_transform t = 
+let reset_transform t =
   let (w,h) = Sdl.get_surface_size t.image.Tartine_image.surface in
   { t with
     angle = 0.;
