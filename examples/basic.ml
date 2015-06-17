@@ -10,7 +10,7 @@ module Scancode = Sdl.Scancode
 let v2_normalize v =
   if v <> V2.zero then V2.unit v else v
 
-let update_position step (rect: Box2.t): Box2.t =
+let update_position step (pos: V2.t): V2.t =
   let keyboard_st = Sdl.get_keyboard_state () in
   let kk orient code =
     if Bigarray.Array1.get keyboard_st code = 1 then
@@ -21,7 +21,7 @@ let update_position step (rect: Box2.t): Box2.t =
   V2.v ((kk false left) +. (kk true right)) ((kk false up) +. (kk true down))
   |> v2_normalize
   |> V2.smul step
-  |> flip Box2.move rect
+  |> V2.add pos
 
 let escape =
   Engine.event Event.key_down Event.keyboard_scancode
@@ -32,17 +32,17 @@ let escape =
 let main =
   Engine.tick
   |> Utils.event_map_init
-    (fun st -> ImageStore.load st "examples/images"
-               |> Hashtbl.map (const Elt.create))
+    (fun st -> ImageStore.load st "examples/images")
 
     (fun imgstore ->
-       let background = Hashtbl.find imgstore "background" in
-       let square = Hashtbl.find imgstore "square" in
-       let square_dst = ref (Box2.v V2.zero Size2.(v 64. 48.)) in
+       let background = ImageStore.find "background" imgstore in
+       let square = ImageStore.find "square" imgstore in
+       let square_pos = ref V2.zero in
+       let square_size = Size2.v 64. 48. in
        fun st ->
-         let step = (Int32.to_float st.Engine.frame_time) /. 2. in 
-         square_dst := update_position step !square_dst;
-         Elt.render st background background.Elt.src >>= fun () ->
-         Elt.render st square !square_dst)
+         let step = (Int32.to_float st.Engine.frame_time) /. 2. in
+         square_pos := update_position step !square_pos;
+         Screen.(render st background ~pos:V2.zero no_transform) >>= fun () ->
+         Screen.(render st square ~pos:!square_pos ~size:square_size no_transform))
 
 let () = Engine.run ~w:640 ~h:480 ()

@@ -34,28 +34,27 @@ module Image : sig
   val load : Engine.t -> string -> t Sdl.result
 end
 
-module Elt : sig
-  (** A graphic element, that can be rendered on screen. *)
-  type t = private {
-    id: int;
-    src: Box2.t;
-    scale: float;
-    angle: float;
+module Screen : sig
+  type elt = {
+    dst: Box2.t;
+    
     center: V2.t;
-    hflip: bool; vflip: bool;
-
-    image: Image.t;
+    angle: float;
+    hflip: bool;
+    vflip: bool;
   }
 
-  val create : Image.t -> t
+  type transform = elt -> elt
 
-  val src : Box2.t -> t -> t
-  val scale : float -> t -> t
-  val angle : float -> t -> t
-  val center : V2.t -> t -> t
-  val hflip : bool -> t -> t
-  val vflip : bool -> t -> t
-  val reset_transform : t -> t
+  val no_transform : transform
+
+  val render :
+    Engine.t -> Image.t -> pos:V2.t ->
+    ?src:Box2.t ->
+    ?size:Size2.t ->
+    transform ->
+    unit Sdl.result
+end
 
   (** Render an element to the screen, mapped to the rectangle [dst]. *)
   val render : Engine.t -> t -> dst:Box2.t -> unit Sdl.result
