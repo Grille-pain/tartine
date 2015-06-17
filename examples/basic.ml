@@ -27,7 +27,7 @@ let main =
        let square = ImageStore.find "square" imgstore in
        let map = ImageStore.find "discworld_map" imgstore in
        let square_pos, camera_pos = ref V2.zero, ref V2.zero in
-       let square_size, camera_size = Size2.v 64. 48., Size2.v 640. 480. in
+       let square_size = Size2.v 64. 48. in
        fun st ->
          let step = (Int32.to_float st.Engine.frame_time) /. 2. in
          square_pos := move_square step !square_pos;
