@@ -70,6 +70,11 @@ end
 
 module Camera : sig
   val transform : Engine.t -> pos:V2.t -> ?size:Size2.t -> Screen.transform
+
+  val follow : Engine.t -> pos:V2.t -> ?size:Size2.t ->
+    border:float ->
+    V2.t * Size2.t ->
+    V2.t
 end
 
 module ImageStore : sig
