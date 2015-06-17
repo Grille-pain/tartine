@@ -64,8 +64,8 @@ module Screen : sig
     unit Sdl.result
 end
 
-  (** Render an element to the screen, mapped to the rectangle [dst]. *)
-  val render : Engine.t -> t -> dst:Box2.t -> unit Sdl.result
+module Camera : sig
+  val transform : Engine.t -> pos:V2.t -> ?size:Size2.t -> Screen.transform
 end
 
 module ImageStore : sig
