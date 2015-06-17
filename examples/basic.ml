@@ -11,23 +11,16 @@ let v2_normalize v =
   if v <> V2.zero then V2.unit v else v
 
 let update_position step (pos: V2.t): V2.t =
-  let keyboard_st = Sdl.get_keyboard_state () in
-  let kk orient code =
-    if Bigarray.Array1.get keyboard_st code = 1 then
-      if orient then 1. else -1.
-    else 0. in
-
   let open Scancode in
-  V2.v ((kk false left) +. (kk true right)) ((kk false up) +. (kk true down))
+  [(left, V2.neg V2.ox); (right, V2.ox); (up, V2.neg V2.oy); (down, V2.oy)]
+  |> List.map (fun (code, v) -> if Key.s code then v else V2.zero)
+  |> List.fold_left V2.add V2.zero
   |> v2_normalize
   |> V2.smul step
   |> V2.add pos
 
 let escape =
-  Engine.event Event.key_down Event.keyboard_scancode
-  |> React.E.map (fun ev ->
-    if ev = Scancode.escape then
-      Engine.quit ())
+  Key.s_event Scancode.escape |> React.E.map (fun _ -> Engine.quit ())
 
 let main =
   Engine.tick

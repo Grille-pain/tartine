@@ -28,6 +28,14 @@ module Engine : sig
   val quit : unit -> unit
 end
 
+module Key : sig
+  val s : Sdl.scancode -> bool
+  val k : Sdl.keycode -> bool
+  
+  val s_event : Sdl.scancode -> [`Key_up | `Key_down] React.E.t
+  val k_event : Sdl.keycode -> [`Key_up | `Key_down] React.E.t
+end
+
 module Image : sig
   (** An image, load to memory & GPU. *)
   type t = private { surface: Sdl.surface; texture: Sdl.texture; size: Gg.size2 }
