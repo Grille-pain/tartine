@@ -30,7 +30,7 @@ end
 
 module Image : sig
   (** An image, load to memory & GPU. *)
-  type t = private { surface: Sdl.surface; texture: Sdl.texture }
+  type t = private { surface: Sdl.surface; texture: Sdl.texture; size: Gg.size2 }
   val load : Engine.t -> string -> t Sdl.result
 end
 
