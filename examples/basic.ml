@@ -36,4 +36,4 @@ let main =
          Screen.(render st map ~pos:V2.zero camera_transform) >>= fun () ->
          Screen.(render st square ~pos:!square_pos ~size:square_size camera_transform))
 
-let () = Engine.run ~w:640 ~h:480 ()
+let () = Engine.run ~w:640 ~h:480 ~flags:Sdl.Window.resizable ()
