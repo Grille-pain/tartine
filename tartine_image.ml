@@ -1,8 +1,9 @@
 open Tsdl
+open Gg
 open Tartine_engine
 open Tartine_utils.Sdl_result
 
-type t = { surface: Sdl.surface; texture: Sdl.texture; size: Gg.size2 }
+type t = { surface: Sdl.surface; texture: Sdl.texture; size: Size2.t }
 
 let free_t t =
   Sdl.free_surface t.surface;
