@@ -7,19 +7,13 @@ open Utils.Sdl_result
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode
 
-let v2_normalize v =
-  if v <> V2.zero then V2.unit v else v
-
-let zqsd z q s d step pos =
-  [(q, V2.neg V2.ox); (d, V2.ox); (z, V2.neg V2.oy); (s, V2.oy)]
-  |> List.map (fun (code, v) -> if Key.s code then v else V2.zero)
-  |> List.fold_left V2.add V2.zero
-  |> v2_normalize
+let wasd keys step pos =
+  Tartine.Key.wasd keys
   |> V2.smul step
   |> V2.add pos
 
-let move_square = zqsd Scancode.up Scancode.left Scancode.down Scancode.right
-let move_camera = zqsd Scancode.w Scancode.a Scancode.s Scancode.d
+let move_square = wasd Scancode.(up, left, down, right)
+let move_camera = wasd Scancode.(w, a, s, d)
 
 let escape =
   Key.s_event Scancode.escape |> React.E.map (fun _ -> Engine.quit ())

@@ -34,6 +34,10 @@ module Key : sig
   
   val s_event : Sdl.scancode -> [`Key_up | `Key_down] React.E.t
   val k_event : Sdl.keycode -> [`Key_up | `Key_down] React.E.t
+
+  val wasd :
+    Sdl.scancode * Sdl.scancode * Sdl.scancode * Sdl.scancode ->
+    V2.t
 end
 
 module Image : sig
