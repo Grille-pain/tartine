@@ -1,0 +1,1 @@
+<*>: package(batteries, gg, toml, camlimages.all_formats)

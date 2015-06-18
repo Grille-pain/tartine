@@ -1,2 +1,2 @@
 B _build
-PKG batteries react gg tsdl tsdl_image toml
+PKG batteries react gg tsdl tsdl_image toml camlimages
