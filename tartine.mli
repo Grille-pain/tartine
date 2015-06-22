@@ -112,6 +112,10 @@ module ImageStore : sig
   val find : string -> t -> Image.t
 end
 
+module Screenshot : sig
+  val take : ?filename:string -> Engine.t -> unit Sdl.result
+end
+
 module Utils : sig
   (** A quite useful alternative to [React.E.map], that allows the user to
       create some initial value based on the value of the first event, and hold

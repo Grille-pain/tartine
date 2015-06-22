@@ -4,4 +4,5 @@ module Screen = Tartine_screen
 module Camera = Tartine_camera
 module Image = Tartine_image
 module ImageStore = Tartine_imageStore
+module Screenshot = Tartine_screenshot
 module Utils = Tartine_utils
