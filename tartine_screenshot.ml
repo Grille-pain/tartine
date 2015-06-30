@@ -12,7 +12,7 @@ let fresh_name (): string Sdl.result =
     |> Array.to_list
     |> List.map (Filename.basename %> Filename.chop_extension)
     |> List.filter_map String.Exceptionless.to_int
-    |> List.fold_left max 0
+    |> List.fold_left max 0 |> succ
     |> (fun i -> Filename.(screenshots_dir_name ^/ String.of_int i ^ ".bmp"))
     |> return
   in
