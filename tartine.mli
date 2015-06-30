@@ -21,8 +21,11 @@ module Engine : sig
 
   (** Run the engine. Must be called at some point. *)
   val run :
-    w:int -> h:int -> ?fullscreen:bool -> ?flags:Sdl.Window.flags ->
+    ?fullscreen:bool -> ?flags:Sdl.Window.flags -> w:int -> h:int ->
     unit -> unit
+
+  (** Get the state of the engine. *)
+  val state : unit -> t
 
   (** Call this to stop the engine. *)
   val quit : unit -> unit

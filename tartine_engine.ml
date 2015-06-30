@@ -84,13 +84,16 @@ let tick, send_tick =
   let tick, send_tick = React.E.create () in
   React.E.map slow_print_time tick, send_tick
 
-let send_tick r w frame total =
-  send_tick {
-    renderer = r;
-    window = w;
-    frame_time = frame;
-    total_time = total;
+let engine_state =
+  ref {
+    renderer = Sdl.unsafe_renderer_of_ptr Nativeint.zero;
+    window = Sdl.unsafe_window_of_ptr Nativeint.zero;
+    frame_time = 0l;
+    total_time = 0l
   }
+
+let state () = !engine_state
+let send_tick () = send_tick !engine_state
 
 let event_loop r w =
   let open Int32 in
@@ -99,7 +102,9 @@ let event_loop r w =
   let rec loop () =
     let delay, frame, total = update_time () in
     send_events ev;
-    send_tick r w frame total;
+    engine_state := { renderer = r; window = w;
+                      frame_time = frame; total_time = total };
+    send_tick ();
     if delay > zero then Sdl.delay (delay / (of_int 2));
     Sdl.render_present r;
     Sdl.render_clear r >>= fun () ->
@@ -107,8 +112,7 @@ let event_loop r w =
   in
   loop ()
 
-
-let run ~w ~h ?(fullscreen = false) ?(flags = Sdl.Window.opengl) () =
+let run ?(fullscreen = false) ?(flags = Sdl.Window.opengl) ~w ~h () =
   let open Sdl_result in
   let main () =
     Sdl.init Sdl.Init.everything >>= fun () ->

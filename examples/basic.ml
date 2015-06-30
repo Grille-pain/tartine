@@ -18,6 +18,11 @@ let move_camera = wasd Scancode.(w, a, s, d)
 let escape =
   Key.s_event Scancode.escape |> React.E.map (fun _ -> Engine.quit ())
 
+let screenshot =
+  Key.s_event Scancode.f12
+  |> React.E.map (fun _ -> Screenshot.take (Engine.state ())
+                           |> handle_error print_endline)
+
 let main =
   Engine.tick
   |> Utils.event_map_init
@@ -37,4 +42,4 @@ let main =
          Screen.(render st map ~pos:V2.zero camera_transform) >>= fun () ->
          Screen.(render st square ~pos:!square_pos ~size:square_size camera_transform))
 
-let () = Engine.run ~w:640 ~h:480 ~flags:Sdl.Window.resizable ()
+let () = Engine.run ~flags:Sdl.Window.resizable ~w:640 ~h:480 ()
