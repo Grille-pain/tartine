@@ -18,6 +18,7 @@ module Engine : sig
       your main code.
   *)
   val tick : t React.E.t
+  val post_render : t React.E.t
 
   (** Run the engine. Must be called at some point. *)
   val run :

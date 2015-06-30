@@ -84,6 +84,8 @@ let tick, send_tick =
   let tick, send_tick = React.E.create () in
   React.E.map slow_print_time tick, send_tick
 
+let post_render, send_post_render = React.E.create ()
+
 let engine_state =
   ref {
     renderer = Sdl.unsafe_renderer_of_ptr Nativeint.zero;
@@ -94,6 +96,7 @@ let engine_state =
 
 let state () = !engine_state
 let send_tick () = send_tick !engine_state
+let send_post_render () = send_post_render !engine_state
 
 let event_loop r w =
   let open Int32 in
@@ -107,6 +110,7 @@ let event_loop r w =
     send_tick ();
     if delay > zero then Sdl.delay (delay / (of_int 2));
     Sdl.render_present r;
+    send_post_render ();
     Sdl.render_clear r >>= fun () ->
     if not !quit then loop () else return ();
   in
