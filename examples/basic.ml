@@ -18,10 +18,21 @@ let move_camera = wasd Scancode.(w, a, s, d)
 let escape =
   Key.s_event Scancode.escape |> React.E.map (fun _ -> Engine.quit ())
 
-let screenshot =
+
+let b = ref false
+
+let event =
   Key.s_event Scancode.f12
-  |> React.E.map (fun _ -> Screenshot.take (Engine.state ())
-                           |> handle_error print_endline)
+  |> React.E.map (function
+        `Key_up -> b := true
+      | `Key_down -> ())
+
+let screenshot =
+  Engine.post_render
+  |> React.E.map (fun t -> if !b then
+                     Screenshot.take t
+                     |> handle_error print_endline;
+                   b := false)
 
 let main =
   Engine.tick
