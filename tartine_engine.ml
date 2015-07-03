@@ -1,150 +1,170 @@
 open Tsdl
+open Batteries
+open Sigs
 open Tartine_utils
 
-let fps = 60l
-let wait_time = Int32.(1000l / fps)
-(* How much slower do we need to refresh textual debug informations?
-   (eg. displayed fps, etc.) *)
-let printing_speed_ratio = 3
+module Make (I: Init_sig) = struct
+  let fps = 60l
+  let wait_time = Int32.(1000l / fps)
+  (* How much slower do we need to refresh textual debug informations?
+     (eg. displayed fps, etc.) *)
+  let printing_speed_ratio = 3
 
-type t = {
-  renderer: Sdl.renderer;
-  window: Sdl.window;
-  frame_time: int32;
-  total_time: int32;
-}
+  type time = { frame_time: int32; total_time: int32 }
 
-module EventsH = Hashtbl.Make (struct
-    type t = Sdl.event_type
-    let hash = Hashtbl.hash
-    let equal = (=)
-  end)
+  module EventsH = Hashtbl.Make (struct
+      type t = Sdl.event_type
+      let hash = Hashtbl.hash
+      let equal = (=)
+    end)
 
-let events_table = EventsH.create 255
+  (* Time handling ************************************************************)
 
-let event ty field =
-  let handlers =
-    try EventsH.find events_table ty with Not_found -> []
-  in
-  let e, send_e = React.E.create () in
-  EventsH.replace events_table ty
-    ((fun sdl_e -> Sdl.Event.get sdl_e field |> send_e) :: handlers);
-  e
+  let ptime step delay frame =
+    let open Int32 in
+    let actual_fps = (fps * fps * frame) / 1000l in
+    Printf.printf "% 8i% 8i% 8i (fps: % 4d)\r%!"
+      (to_int step)
+      (to_int delay)
+      (to_int frame)
+      (to_int actual_fps)
 
-let quit = ref false
+  let update_time, print_time =
+    let open Int32 in
+    let stime = ref 0l in
+    let etime = ref 0l in
+    let delay = ref 0l in
+    let step  = ref 0l in
+    let frame_time = ref 0l in
+    (fun () ->
+       etime := Sdl.get_ticks ();
+       frame_time := !etime - !stime;
+       delay := (!delay + (wait_time - !frame_time)) / (of_int 2);
+       step :=
+         if 0l <= !delay
+         then max 1l !frame_time
+         else min 100l !frame_time;
+       stime := Sdl.get_ticks ();
+       !delay, !step, !stime),
+    (fun () -> ptime !step !delay !frame_time)
 
-let send_events ev =
-  Sdl.pump_events ();
-  while Sdl.poll_event (Some ev) do
-    if Sdl.Event.(get ev typ = quit) then quit := true;
-    try EventsH.find events_table Sdl.Event.(get ev typ)
-        |> List.iter ((|>) ev)
-    with Not_found -> ()
-  done
+  let slow_print_time =
+    let tick_count = ref 0 in
+    fun st ->
+      if !tick_count >= printing_speed_ratio then (
+        tick_count := 0;
+        print_time ()
+      ); incr tick_count;
+      st
 
+  (* Runtime data *************************************************************)
 
-let ptime step delay frame =
-  let open Int32 in
-  let actual_fps = (fps * fps * frame) / 1000l in
-  Printf.printf "% 8i% 8i% 8i (fps: % 4d)\r%!"
-    (to_int step)
-    (to_int delay)
-    (to_int frame)
-    (to_int actual_fps)
+  let events_table = EventsH.create 255
+  let events_s_table = EventsH.create 255
 
-let update_time, print_time =
-  let open Int32 in
-  let stime = ref 0l in
-  let etime = ref 0l in
-  let delay = ref 0l in
-  let step  = ref 0l in
-  let frame_time = ref 0l in
-  (fun () ->
-     etime := Sdl.get_ticks ();
-     frame_time := !etime - !stime;
-     delay := (!delay + (wait_time - !frame_time)) / (of_int 2);
-     step :=
-       if 0l <= !delay
-       then max 1l !frame_time
-       else min 100l !frame_time;
-     stime := Sdl.get_ticks ();
-     !delay, !step, !stime),
-  (fun () -> ptime !step !delay !frame_time)
+  let do_quit = ref false
 
-let slow_print_time =
-  let tick_count = ref 0 in
-  fun st ->
-    if !tick_count >= printing_speed_ratio then (
-      tick_count := 0;
-      print_time ()
-    ); incr tick_count;
-    st
+  (* init sdl stuff *)
+  let () =
+    let open Sdl_result in
+    begin
+      Sdl.init Sdl.Init.everything >>= fun () ->
+      (* Tsdl_image.Image.init Tsdl_image.Image.Init.(png + jpg) |> ignore; *)
+      if (Sdl.set_hint Sdl.Hint.render_vsync "1")
+      then print_endline "vsync: success"
+      else print_endline "vsync: failure";
+      if (Sdl.set_hint Sdl.Hint.render_scale_quality "nearest")
+      then print_endline "scale quality: success"
+      else print_endline "scale quality: failure";
+      return ()
+    end |> handle_error failwith
 
-let tick, send_tick =
-  let tick, send_tick = React.E.create () in
-  React.E.map slow_print_time tick, send_tick
+  let window, renderer =
+    let open Sdl_result in
+    Sdl.create_window_and_renderer ~w:I.w ~h:I.h
+      (if I.fullscreen then Sdl.Window.(fullscreen + I.flags) else I.flags)
+    |> handle_error failwith
 
-let post_render, send_post_render = React.E.create ()
+  let tick, send_tick =
+    let tick, send_tick = React.E.create () in
+    React.E.map slow_print_time tick, send_tick
+    
+  let post_render, send_post_render = React.E.create ()
 
-let engine_state =
-  ref {
-    renderer = Sdl.unsafe_renderer_of_ptr Nativeint.zero;
-    window = Sdl.unsafe_window_of_ptr Nativeint.zero;
-    frame_time = 0l;
-    total_time = 0l
-  }
+  (****************************************************************************)
 
-let state () = !engine_state
-let send_tick () = send_tick !engine_state
-let send_post_render () = send_post_render !engine_state
+  let event ty field =
+    let handlers =
+      try EventsH.find events_table ty with Not_found -> []
+    in
+    let e, send_e = React.E.create () in
+    let handle sdl_e = Sdl.Event.get sdl_e field |> send_e in
+    EventsH.replace events_table ty (handle :: handlers);
+    e
 
-let event_loop r w =
-  let open Int32 in
-  let open Sdl_result in
-  let ev = Sdl.Event.create () in
-  let rec loop () =
-    let delay, frame, total = update_time () in
-    send_events ev;
-    engine_state := { renderer = r; window = w;
-                      frame_time = frame; total_time = total };
-    send_tick ();
-    if delay > zero then Sdl.delay (delay / (of_int 2));
-    Sdl.render_present r;
-    send_post_render ();
-    Sdl.render_clear r >>= fun () ->
-    if not !quit then loop () else return ();
-  in
-  loop ()
+  let event_this_frame ty field =
+    let handlers =
+      try EventsH.find events_s_table ty with Not_found -> []
+    in
+    let s, send_s = React.S.create None in
+    let handle sdl_e_opt =
+      Option.map (flip Sdl.Event.get field) sdl_e_opt
+      |> send_s in
+    EventsH.replace events_s_table ty (handle :: handlers);
+    s
 
-let run ?(fullscreen = false) ?(flags = Sdl.Window.opengl) ~w ~h () =
-  let open Sdl_result in
-  let main () =
-    Sdl.init Sdl.Init.everything >>= fun () ->
-    (* Tsdl_image.Image.init Tsdl_image.Image.Init.(png + jpg) |> ignore; *)
-    if (Sdl.set_hint Sdl.Hint.render_vsync "1")
-    then print_endline "vsync: success"
-    else print_endline "vsync: failure";
-    if (Sdl.set_hint Sdl.Hint.render_scale_quality "nearest")
-    then print_endline "scale quality: success"
-    else print_endline "scale quality: failure";
+  let send_events ev =
+    Sdl.pump_events ();
+    let received = EventsH.map (fun _ _ -> false) events_s_table in
+    while Sdl.poll_event (Some ev) do
+      if Sdl.Event.(get ev typ = quit) then do_quit := true;
+      let event_typ = Sdl.Event.(get ev typ) in
+      try EventsH.find events_table event_typ |> List.iter ((|>) ev)
+      with Not_found -> ();
+        try EventsH.find events_s_table event_typ
+            |> List.iter ((|>) (Some ev));
+          EventsH.replace received event_typ true;
+        with Not_found -> ();
+    done;
+    EventsH.iter (fun event_typ b ->
+        if b = false then
+          EventsH.find events_s_table event_typ
+          |> List.iter ((|>) None)
+      ) received
 
-    Sdl.create_window_and_renderer ~w ~h
-      (if fullscreen then Sdl.Window.(fullscreen + flags) else flags) >>= fun (w, r) ->
+  let quit () =
+    let e = Sdl.Event.create () in
+    Sdl.Event.set e Sdl.Event.typ Sdl.Event.quit;
+    Sdl.push_event e |> ignore
 
-    event_loop r w >>= fun () ->
+  (* Main event loop **********************************************************)
 
+  let event_loop r w =
+    let open Int32 in
+    let open Sdl_result in
+    let ev = Sdl.Event.create () in
+    let rec loop () =
+      let delay, frame, total = update_time () in
+      send_events ev;
+      send_tick { frame_time = frame; total_time = total };
+      if delay > zero then Sdl.delay (delay / (of_int 2));
+      Sdl.render_present r;
+      (* TODO FIXME: que donner comme vrai temps à send_post_render ? *)
+      send_post_render { frame_time = frame; total_time = total };
+      Sdl.render_clear r >>= fun () ->
+      if not !do_quit then loop () else return ();
+    in
+    loop ()
+
+  let cleanup_and_quit r w =
     Sdl.destroy_renderer r;
     Sdl.destroy_window w;
     (* Tsdl_image.Image.quit (); *)
     Sdl.quit ();
-    print_endline "\nquit.";
-    `Ok ()
-  in
-  match main () with
-  | `Ok () -> ()
-  | `Error err -> Printf.eprintf "%s\n%!" err
+    print_endline "\nquit."
 
-let quit () =
-  let e = Sdl.Event.create () in
-  Sdl.Event.set e Sdl.Event.typ Sdl.Event.quit;
-  Sdl.push_event e |> ignore
+  let run () =
+    event_loop renderer window
+    |> Sdl_result.handle_error (Printf.eprintf "%s\n%!");
+    cleanup_and_quit renderer window
+end
