@@ -20,33 +20,38 @@ module Make (I: Init_sig) = struct
 
   (* Time handling ************************************************************)
 
-  let ptime step delay frame =
+  let ptime real delay frame =
     let open Int32 in
     let actual_fps = (fps * fps * frame) / 1000l in
     Printf.printf "% 8i% 8i% 8i (fps: % 4d)\r%!"
-      (to_int step)
+      (to_int real)
       (to_int delay)
       (to_int frame)
       (to_int actual_fps)
 
-  let update_time, print_time =
+  let update_time, render_time, print_time =
     let open Int32 in
-    let stime = ref 0l in
-    let etime = ref 0l in
-    let delay = ref 0l in
+    let ttime = ref 0l in
+    let rtime = ref 0l in
+    let real  = ref 0l in
     let step  = ref 0l in
-    let frame_time = ref 0l in
+    let delay = ref 0l in
+    let frame = ref 0l in
     (fun () ->
-       etime := Sdl.get_ticks ();
-       frame_time := !etime - !stime;
-       delay := (!delay + (wait_time - !frame_time)) / (of_int 2);
+       let ctime = Sdl.get_ticks () in
+       frame := ctime - !ttime;
+       delay := (!delay + (wait_time - !frame)) / (of_int 2);
        step :=
          if 0l <= !delay
-         then max 1l !frame_time
-         else min 100l !frame_time;
-       stime := Sdl.get_ticks ();
-       !delay, !step, !stime),
-    (fun () -> ptime !step !delay !frame_time)
+         then max 1l !frame
+         else min 100l !frame;
+       ttime := ctime;
+       !delay, !step, !ttime),
+    (fun () ->
+       rtime := Sdl.get_ticks ();
+       real := !rtime - !ttime;
+       !rtime),
+    (fun () -> ptime !real !delay !frame)
 
   let slow_print_time =
     let tick_count = ref 0 in
@@ -88,7 +93,7 @@ module Make (I: Init_sig) = struct
   let tick, send_tick =
     let tick, send_tick = React.E.create () in
     React.E.map slow_print_time tick, send_tick
-    
+
   let post_render, send_post_render = React.E.create ()
 
   (****************************************************************************)
@@ -149,8 +154,7 @@ module Make (I: Init_sig) = struct
       send_tick { frame_time = frame; total_time = total };
       if delay > zero then Sdl.delay (delay / (of_int 2));
       Sdl.render_present r;
-      (* TODO FIXME: que donner comme vrai temps à send_post_render ? *)
-      send_post_render { frame_time = frame; total_time = total };
+      send_post_render { frame_time = frame; total_time = render_time () };
       Sdl.render_clear r >>= fun () ->
       if not !do_quit then loop () else return ();
     in
