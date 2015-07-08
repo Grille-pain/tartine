@@ -154,6 +154,7 @@ module Make (I: Init_sig) = struct
       send_tick { frame_time = frame; total_time = total };
       if delay > zero then Sdl.delay (delay / (of_int 2));
       Sdl.render_present r;
+      ignore (Gc.major_slice 0);
       send_post_render { frame_time = frame; total_time = render_time () };
       Sdl.render_clear r >>= fun () ->
       if not !do_quit then loop () else return ();
