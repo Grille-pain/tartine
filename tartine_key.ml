@@ -30,11 +30,11 @@ module Make (Engine: Engine_sig) = struct
   let s_event_this_frame scancode =
     let down : [`Key_up | `Key_down] option React.S.t =
       Engine.event_this_frame Sdl.Event.key_down Sdl.Event.keyboard_scancode
-      |> React.S.map (fun sc -> if sc = Some scancode then Some `Key_down else None) in
+      |> React.S.map (fun l -> if List.mem scancode l then Some `Key_down else None) in
 
     let up : [`Key_up | `Key_down] option React.S.t =
       Engine.event_this_frame Sdl.Event.key_up Sdl.Event.keyboard_scancode
-      |> React.S.map (fun sc -> if sc = Some scancode then Some `Key_up else None) in
+      |> React.S.map (fun l -> if List.mem scancode l then Some `Key_up else None) in
 
     React.S.merge (fun o o' -> match o' with Some _ -> o' | _ -> o)
       None [down; up]

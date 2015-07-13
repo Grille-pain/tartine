@@ -111,31 +111,31 @@ module Make (I: Init_sig) = struct
     let handlers =
       try EventsH.find events_s_table ty with Not_found -> []
     in
-    let s, send_s = React.S.create None in
-    let handle sdl_e_opt =
-      Option.map (flip Sdl.Event.get field) sdl_e_opt
-      |> send_s in
-    EventsH.replace events_s_table ty (handle :: handlers);
+    let s, send_s = React.S.create [] in
+    let record_ev, send_recorded =
+      let mem = ref [] in
+      (fun sdl_e -> mem := (Sdl.Event.get sdl_e field) :: !mem),
+      (fun () -> send_s !mem; mem := [])
+    in
+    EventsH.replace events_s_table ty
+      ((record_ev, send_recorded)::handlers);
     s
 
   let send_events ev =
     Sdl.pump_events ();
-    let received = EventsH.map (fun _ _ -> false) events_s_table in
     while Sdl.poll_event (Some ev) do
       if Sdl.Event.(get ev typ = quit) then do_quit := true;
       let event_typ = Sdl.Event.(get ev typ) in
-      try EventsH.find events_table event_typ |> List.iter ((|>) ev)
-      with Not_found -> ();
-        try EventsH.find events_s_table event_typ
-            |> List.iter ((|>) (Some ev));
-          EventsH.replace received event_typ true;
-        with Not_found -> ();
+      (try EventsH.find events_table event_typ |> List.iter ((|>) ev)
+       with Not_found -> ());
+      (try EventsH.find events_s_table event_typ
+           |> List.map fst
+           |> List.iter ((|>) ev);
+        with Not_found -> ());
     done;
-    EventsH.iter (fun event_typ b ->
-        if b = false then
-          EventsH.find events_s_table event_typ
-          |> List.iter ((|>) None)
-      ) received
+    EventsH.iter (fun _ l ->
+      List.iter (fun (_, send_recorded) -> send_recorded ()) l)
+      events_s_table
 
   let quit () =
     let e = Sdl.Event.create () in

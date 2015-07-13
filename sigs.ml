@@ -16,7 +16,7 @@ module type Engine_sig = sig
 
   (** Obtain a react event corresponding to some SDL event. *)
   val event : Sdl.event_type -> 'b Sdl.Event.field -> 'b React.E.t
-  val event_this_frame : Sdl.event_type -> 'b Sdl.Event.field -> 'b option React.S.t
+  val event_this_frame : Sdl.event_type -> 'b Sdl.Event.field -> 'b list React.S.t
 
   (** The event corresponding to the main loop. Emits one event per frame,
       i.e. 60 events per second.
