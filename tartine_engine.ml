@@ -29,7 +29,7 @@ module Make (I: Init_sig) = struct
       (to_int frame)
       (to_int actual_fps)
 
-  let update_time, render_time, print_time =
+  let update_time, render_time, delay, frame, print_time =
     let open Int32 in
     let ttime = ref 0l in
     let rtime = ref 0l in
@@ -46,11 +46,13 @@ module Make (I: Init_sig) = struct
          then max 1l !frame
          else min 100l !frame;
        ttime := ctime;
-       !delay, !step, !ttime),
+       !ttime),
     (fun () ->
        rtime := Sdl.get_ticks ();
        real := !rtime - !ttime;
        !rtime),
+    (fun () -> !delay),
+    (fun () -> !frame),
     (fun () -> ptime !real !delay !frame)
 
   let slow_print_time =
@@ -149,13 +151,15 @@ module Make (I: Init_sig) = struct
     let open Sdl_result in
     let ev = Sdl.Event.create () in
     let rec loop () =
-      let delay, frame, total = update_time () in
+      let total = update_time () in
+      let delay = delay () in
+      let frame = frame () in
       send_events ev;
       send_tick { frame_time = frame; total_time = total };
-      if delay > zero then Sdl.delay (delay / (of_int 2));
-      Sdl.render_present r;
       ignore (Gc.major_slice 0);
       send_post_render { frame_time = frame; total_time = render_time () };
+      if delay > zero then Sdl.delay (delay / (of_int 2));
+      Sdl.render_present r;
       Sdl.render_clear r >>= fun () ->
       if not !do_quit then loop () else return ();
     in
