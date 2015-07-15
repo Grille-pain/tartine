@@ -21,7 +21,7 @@ struct
         let img_name = Filename.(dir ^/ Toml.to_string v) in
         let k = Toml.Table.Key.to_string k in
         handle_error (fun s -> Printf.eprintf "%s\n%!" s)
-          (Image.load tartine img_name >>= fun img ->
+          (Image.load img_name >>= fun img ->
            return (Hashtbl.replace h k img))
       with Toml.Value.To.Bad_type _ -> Printf.eprintf "Toml: value ti bad type\n%!"
     );
