@@ -26,19 +26,13 @@ let escape =
   T.Key.s_event Scancode.escape |> React.E.map (fun _ -> T.Engine.quit ())
 
 let f12 = T.Key.s_event_this_frame Scancode.f12
-let foobar = React.S.map (function
-  | None -> print_endline "None"
-  | Some `Key_down -> print_endline "Key_down"
-  | Some `Key_up -> print_endline "Key_up") f12
 
 let screenshot =
   T.Engine.post_render
   |> React.E.map (fun _ ->
     match React.S.value f12 with
     | Some `Key_down ->
-      print_endline "screenshot";
-      T.Screenshot.take ()
-      |> handle_error print_endline
+      T.Screenshot.take () |> handle_error print_endline
     | _ -> ())
 
 let imgstore = T.ImageStore.load "examples/images"
