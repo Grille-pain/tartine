@@ -46,9 +46,14 @@ module Make (Engine: Engine_sig) = struct
   let v2_normalize v =
     if v <> V2.zero then V2.unit v else v
 
-  let wasd (w, a, _s, d) =
+  let wasd_value (w, a, _s, d) =
     [(a, V2.neg V2.ox); (d, V2.ox); (w, V2.neg V2.oy); (_s, V2.oy)]
     |> List.map (fun (code, v) -> if s code then v else V2.zero)
     |> List.fold_left V2.add V2.zero
     |> v2_normalize
+
+  let wasd keys =
+    let (w_e, a_e, s_e, d_e) = Tuple4.mapn s_event keys in
+    let e = React.E.select [w_e; a_e; s_e; d_e] in
+    React.S.fold (fun _ _ -> wasd_value keys) V2.zero e
 end

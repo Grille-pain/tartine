@@ -46,7 +46,7 @@ module type Key_sig = sig
 
   val wasd :
     Sdl.scancode * Sdl.scancode * Sdl.scancode * Sdl.scancode ->
-    V2.t
+    V2.t React.S.t
 end
 
 module type Image_sig = sig
