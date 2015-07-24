@@ -85,6 +85,8 @@ end
 module type Camera_sig = sig
   type screen_transform
   
+  val initial_region : screen_transform
+
   val transform : pos:V2.t -> ?size:Size2.t -> screen_transform
 
   val follow : pos:V2.t -> ?size:Size2.t ->

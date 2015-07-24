@@ -27,6 +27,11 @@ struct
                    ((Box2.h elt.dst) *. (wh /. (Size2.h size))));
     }
 
+  let initial_region =
+    transform
+      ~pos:V2.zero
+      ~size:(window_size () |> uncurry V2.v)
+
   let box2_subset b b' =
     (Box2.ox b' <= Box2.ox b) &&
     (Box2.oy b' <= Box2.oy b) &&
