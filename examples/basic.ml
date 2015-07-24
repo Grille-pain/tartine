@@ -14,13 +14,14 @@ open T.Utils.Sdl_result
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode
 
-let wasd keys step pos =
-  T.Key.wasd keys
-  |> V2.smul step
-  |> V2.add pos
+let move v step pos =
+  v |> V2.smul step |> V2.add pos
 
-let move_square = wasd Scancode.(up, left, down, right)
-let move_camera = wasd Scancode.(w, a, s, d)
+let arrows = T.Key.wasd Scancode.(up, left, down, right)
+let wasd = T.Key.wasd Scancode.(w, a, s, d)
+
+let move_square = React.S.value arrows |> move
+let move_camera = React.S.value wasd |> move
 
 let escape =
   T.Key.s_event Scancode.escape |> React.E.map (fun _ -> T.Engine.quit ())

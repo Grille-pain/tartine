@@ -2,7 +2,7 @@
 
 OCAMLBUILD := ocamlbuild -classic-display -use-ocamlfind -use-menhir -cflags "-g" -lflags "-g"
 MAIN       := main
-EXAMPLES   := basic
+EXAMPLES   := basic snek
 TOOLS      := pack_images
 
 all:
