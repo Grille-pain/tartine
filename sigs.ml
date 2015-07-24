@@ -54,6 +54,7 @@ module type Image_sig = sig
   type t = private { surface: Sdl.surface;
                      texture: Sdl.texture;
                      size: Size2.t }
+  val make : w:int -> h:int -> int -> int -> int -> int -> t Sdl.result
   val load : string -> t Sdl.result
 end
 
