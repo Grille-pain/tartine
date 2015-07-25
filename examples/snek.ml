@@ -61,7 +61,9 @@ let main =
       let new_head = V2.add (Dllist.get !head) !head_dir in
       head := Dllist.prepend !head new_head;
       if new_head = !apple then (
-        apple := new_apple ()
+        apple := new_apple ();
+        decr frames_per_tick;
+        if !frames_per_tick < 1 then T.Engine.quit ();
       ) else (
         Dllist.remove (Dllist.prev !head)
       )

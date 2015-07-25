@@ -46,11 +46,10 @@ module Make (Engine: Engine_sig) = struct
   let v2_normalize v =
     if v <> V2.zero then V2.unit v else v
 
-  let wasd_value (w, a, _s, d) =
-    [(a, V2.neg V2.ox); (d, V2.ox); (w, V2.neg V2.oy); (_s, V2.oy)]
+  let wasd_value (ww, aa, ss, dd) =
+    [(aa, V2.neg V2.ox); (dd, V2.ox); (ww, V2.neg V2.oy); (ss, V2.oy)]
     |> List.map (fun (code, v) -> if s code then v else V2.zero)
     |> List.fold_left V2.add V2.zero
-    |> v2_normalize
 
   let wasd keys =
     let (w_e, a_e, s_e, d_e) = Tuple4.mapn s_event keys in

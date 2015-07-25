@@ -17,11 +17,16 @@ module Scancode = Sdl.Scancode
 let move v step pos =
   v |> V2.smul step |> V2.add pos
 
-let arrows = T.Key.wasd Scancode.(up, left, down, right)
-let wasd = T.Key.wasd Scancode.(w, a, s, d)
+let arrows =
+  T.Key.wasd Scancode.(up, left, down, right)
+  |> React.S.map (fun v -> if v <> V2.zero then V2.unit v else v)
 
-let move_square = React.S.value arrows |> move
-let move_camera = React.S.value wasd |> move
+let wasd = 
+  T.Key.wasd Scancode.(w, a, s, d)
+  |> React.S.map (fun v -> if v <> V2.zero then V2.unit v else v)
+
+let move_square step pos = move (React.S.value arrows) step pos
+let move_camera step pos = move (React.S.value wasd) step pos
 
 let escape =
   T.Key.s_event Scancode.escape |> React.E.map (fun _ -> T.Engine.quit ())
