@@ -15,6 +15,8 @@ module T = Tartine.Run (struct
 open T.Utils
 open T.Utils.Sdl_result
 
+let cam = React.S.value T.Camera.screen
+
 let snake_block =
   T.Image.make
     ~w:block_size ~h:block_size
@@ -71,13 +73,13 @@ let main =
       incr count
     );
 
-    T.Screen.render apple_block
-      ~pos:(of_grid !apple) T.Camera.initial_region
+    T.Camera.render cam apple_block
+      (T.RenderTarget.at_pos (of_grid !apple))
     |> handle_error failwith;
 
     Dllist.iter (fun pos ->
-      T.Screen.render snake_block
-        ~pos:(of_grid pos) T.Camera.initial_region
+      T.Camera.render cam snake_block
+        (T.RenderTarget.at_pos (of_grid pos))
       |> handle_error failwith
     ) !head
   )

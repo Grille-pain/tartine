@@ -1,4 +1,5 @@
 open Gg
+open Batteries
 open Tsdl
 
 module type Init_sig = sig
@@ -54,45 +55,59 @@ module type Image_sig = sig
   type t = private { surface: Sdl.surface;
                      texture: Sdl.texture;
                      size: Size2.t }
-  val make : w:int -> h:int -> int -> int -> int -> int -> t Sdl.result
+  val make : w:int -> h:int -> Color.t -> t Sdl.result
   val load : string -> t Sdl.result
+end
+
+module type RenderTarget_sig = sig
+  type params = {
+    pos    : V2.t;
+    size   : Size2.t;
+
+    center : V2.t;
+    angle  : float;
+    hflip  : bool;
+    vflip  : bool;
+  }
+
+  type t = Size2.t -> params
+
+  val at_pos : V2.t -> t
+  val (>>)   : t -> (params -> params) -> t
+
+  val pos    : V2.t    -> params -> params
+  val size   : Size2.t -> params -> params
+  val center : V2.t    -> params -> params
+  val angle  : float   -> params -> params
+  val hflip  : bool    -> params -> params
+  val vflip  : bool    -> params -> params
 end
 
 module type Screen_sig = sig
   type image_t
-
-  type elt = {
-    dst: Box2.t;
-
-    center: V2.t;
-    angle: float;
-    hflip: bool;
-    vflip: bool;
-  }
-
-  type transform = elt -> elt
-
-  val no_transform : transform
+  type renderTarget_t
 
   val render :
-    image_t -> pos:V2.t ->
     ?src:Box2.t ->
-    ?size:Size2.t ->
-    transform ->
+    image_t -> renderTarget_t ->
     unit Sdl.result
 end
 
 module type Camera_sig = sig
-  type screen_transform
+  type image_t
+  type renderTarget_t
   
-  val initial_region : screen_transform
+  type t = Box2.t
 
-  val transform : pos:V2.t -> ?size:Size2.t -> screen_transform
+  val with_screen_size : pos:V2.t -> t React.S.t
+  val screen : t React.S.t
 
-  val follow : pos:V2.t -> ?size:Size2.t ->
-    border:float ->
-    V2.t * Size2.t ->
-    V2.t
+  val render :
+    t ->
+    ?src:Box2.t ->
+    image_t -> renderTarget_t ->
+    unit Sdl.result
+
 end
 
 module type ImageStore_sig = sig

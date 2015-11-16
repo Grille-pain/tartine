@@ -5,22 +5,9 @@ open Sigs
 
 module Make
     (Engine: Engine_sig)
-    (Image: Image_sig) =
+    (Image: Image_sig)
+    (RenderTarget: RenderTarget_sig) =
 struct
-
-  type elt = {
-    dst: Box2.t;
-
-    center: V2.t;
-    angle: float;
-    hflip: bool;
-    vflip: bool;
-  }
-
-  type transform = elt -> elt
-
-  let no_transform e = e
-
   let box2_to_sdl rect =
     let x = truncate @@ Box2.ox rect in
     let y = truncate @@ Box2.oy rect in
@@ -40,31 +27,25 @@ struct
     let y = truncate (V2.y point) in
     Sdl.Point.create ~x ~y
 
-  let render img ~pos ?src ?size transform =
-    let open Engine in
+  let render ?src img target =
     let src = src |? Box2.v V2.zero img.Image.size |> box2_to_sdl in
-    let size = size |? img.Image.size in
-    let elt = transform {
-      dst = Box2.v pos size;
-      center = V2.smul 0.5 size;
-      angle = 0.;
-      hflip = false;
-      vflip = false;
-    } in
-
-    let dst = box2_to_sdl elt.dst in
-    let center = Some (v2_to_sdl elt.center) in
+    let p = target img.Image.size in
+    
+    let dst = box2_to_sdl (Box2.v
+                             p.RenderTarget.pos
+                             p.RenderTarget.size) in
+    let center = Some (v2_to_sdl p.RenderTarget.center) in
     let flip = Sdl.Flip.(
-      (if elt.hflip then Sdl.Flip.horizontal else Sdl.Flip.none)
-      + (if elt.vflip then Sdl.Flip.vertical else Sdl.Flip.none)
+      (if p.RenderTarget.hflip then Sdl.Flip.horizontal else Sdl.Flip.none)
+      + (if p.RenderTarget.vflip then Sdl.Flip.vertical else Sdl.Flip.none)
     ) in
 
-    if Float.abs elt.angle < 0.01 && flip = Sdl.Flip.none then
+    if Float.abs p.RenderTarget.angle < 0.01 && flip = Sdl.Flip.none then
       Sdl.render_copy ~src ~dst Engine.renderer
         img.Image.texture
     else
       Sdl.render_copy_ex
         ~src ~dst
         Engine.renderer img.Image.texture
-        elt.angle center flip
+        p.RenderTarget.angle center flip
 end
