@@ -4,8 +4,7 @@ open Sigs
 open Tartine_utils
 
 module Make (I: Init_sig) = struct
-  let fps = 60l
-  let wait_time = Int32.(1000l / fps)
+  let smoothing_samples_nb = 10
   (* How much slower do we need to refresh textual debug informations?
      (eg. displayed fps, etc.) *)
   let printing_speed_ratio = 3
@@ -20,40 +19,64 @@ module Make (I: Init_sig) = struct
 
   (* Time handling ************************************************************)
 
-  let ptime real delay frame =
+  let ptime render delay frame =
     let open Int32 in
-    let actual_fps = (fps * fps * frame) / 1000l in
+    let fps = if frame = 0l then 0l else 1000l / frame in
     Printf.printf "% 8i% 8i% 8i (fps: % 4d)\r%!"
-      (to_int real)
+      (to_int render)
       (to_int delay)
       (to_int frame)
-      (to_int actual_fps)
+      (to_int fps)
 
-  let update_time, render_time, delay, frame, print_time =
+  let make_smoothed () =
+    let samples = Array.make smoothing_samples_nb 0l in
+    let sample_id = ref 0 in
+    let stored_samples = ref 0 in
+    let samples_sum = ref 0l in
+    let store_sample time =
+      samples_sum := Int32.(!samples_sum - samples.(!sample_id) + time);
+      samples.(!sample_id) <- time;
+      sample_id := (!sample_id + 1) mod smoothing_samples_nb;
+      if !stored_samples < smoothing_samples_nb then
+        incr stored_samples in
+    let smoothed_time () =
+      if !stored_samples = 0 then 0l
+      else Int32.(!samples_sum / (of_int !stored_samples)) in
+    store_sample, smoothed_time
+
+  (* [update_time] must be called after the rendering/computations phase.  It
+     updates the average rendering frame time, and computes - if the framerate
+     is capped - the additionnal delay. 
+  *)
+  let update_time, get_rendering_time, get_frame_time, get_delay, print_time =
     let open Int32 in
-    let ttime = ref 0l in
-    let rtime = ref 0l in
-    let real  = ref 0l in
-    let step  = ref 0l in
+    let after_rendering_total_time = ref 0l in
     let delay = ref 0l in
-    let frame = ref 0l in
+    let store_rendering_time, get_average_rendering_time = make_smoothed () in
+    let store_frame_time, get_average_frame_time = make_smoothed () in
     (fun () ->
-       let ctime = Sdl.get_ticks () in
-       frame := ctime - !ttime;
-       delay := (!delay + (wait_time - !frame)) / (of_int 2);
-       step :=
-         if 0l <= !delay
-         then max 1l !frame
-         else min 100l !frame;
-       ttime := ctime;
-       !ttime),
-    (fun () ->
-       rtime := Sdl.get_ticks ();
-       real := !rtime - !ttime;
-       !rtime),
+       let current_time = Sdl.get_ticks () in
+       let last_frame_time = current_time - !after_rendering_total_time in
+       let last_frame_rendering_time = last_frame_time - !delay in
+       store_frame_time last_frame_time;
+       store_rendering_time last_frame_rendering_time;
+       let average_rendering_time = get_average_rendering_time () in
+       let min_delay = if average_rendering_time = 0l then 1l else 0l in
+       begin match I.fps_cap with
+        | None -> delay := min_delay
+        | Some fps -> delay := max
+              ((1000l / of_int fps) - average_rendering_time)
+              min_delay
+       end;
+       after_rendering_total_time := current_time),
+    (fun () -> get_average_rendering_time ()),
+    (fun () -> get_average_frame_time ()),
     (fun () -> !delay),
-    (fun () -> !frame),
-    (fun () -> ptime !real !delay !frame)
+    (fun () ->
+       ptime
+         (get_average_rendering_time ())
+         !delay
+         (get_average_frame_time ()))
 
   let slow_print_time =
     let tick_count = ref 0 in
@@ -151,16 +174,16 @@ module Make (I: Init_sig) = struct
     let open Sdl_result in
     let ev = Sdl.Event.create () in
     let rec loop () =
-      let total = update_time () in
-      let delay = delay () in
-      let frame = frame () in
+      let frame = get_frame_time () in
       send_events ev;
-      send_tick { frame_time = frame; total_time = total };
+      send_tick { frame_time = frame; total_time = Sdl.get_ticks () };
       ignore (Gc.major_slice 0);
-      send_post_render { frame_time = frame; total_time = render_time () };
-      if delay > zero then Sdl.delay (delay / (of_int 2));
+      send_post_render { frame_time = frame; total_time = Sdl.get_ticks () };
       Sdl.render_present r;
       Sdl.render_clear r >>= fun () ->
+      update_time ();
+      let delay = get_delay () in
+      if delay > 0l then Sdl.delay delay;
       if not !do_quit then loop () else return ();
     in
     loop ()

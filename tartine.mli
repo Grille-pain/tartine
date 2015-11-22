@@ -7,6 +7,7 @@ module type Init_sig = Init_sig
 module Init_defaults : sig
   val fullscreen : bool
   val flags : Sdl.Window.flags
+  val fps_cap : int option
 end
 
 module Run : functor (Init : Init_sig) -> sig

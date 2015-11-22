@@ -7,6 +7,7 @@ module type Init_sig = Init_sig
 module Init_defaults = struct
   let fullscreen = false
   let flags = Sdl.Window.opengl
+  let fps_cap = None
 end
 
 module Run (Init : Init_sig) = struct

@@ -5,6 +5,7 @@ open Tsdl
 module type Init_sig = sig
   val fullscreen : bool
   val flags : Sdl.Window.flags
+  val fps_cap : int option
   val w : int
   val h : int
 end
