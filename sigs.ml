@@ -22,9 +22,6 @@ module type Engine_sig = sig
 
   (** The event corresponding to the main loop. Emits one event per frame,
       i.e. 60 events per second.
-
-      You probably want to use [Util.event_map_init] on this event to plug in
-      your main code.
   *)
   val tick : time React.E.t
   val post_render : time React.E.t
