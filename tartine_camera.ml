@@ -38,11 +38,13 @@ struct
     let ww, wh = Size2.w sz, Size2.h sz in
     let cam_pos = Box2.o cam in
     let cam_size = Box2.size cam in
+    let scale_w = ww /. (Size2.w cam_size) in
+    let scale_h = wh /. (Size2.h cam_size) in
     let target = RenderTarget.(
       target >>
-      (fun p -> pos V2.(p.pos - cam_pos) p) >>
-      (fun p -> size Size2.(v ((Size2.w p.size) *. (ww /. (Size2.w cam_size)))
-                              ((Size2.h p.size) *. (wh /. (Size2.h cam_size))))
+      (fun p -> pos V2.(mul (p.pos - cam_pos) (v scale_w scale_h)) p) >>
+      (fun p -> size Size2.(v ((Size2.w p.size) *. scale_w)
+                              ((Size2.h p.size) *. scale_h))
           p)
     ) in
     Screen.render ?src img target
