@@ -11,7 +11,7 @@ struct
   let load path =
     let dir, path =
       if Sys.is_directory path then
-        path, Filename.(path ^/ "imagestore.toml")
+        path, Filename.(path ^/ "images.store")
       else Filename.dirname path, path
     in
     let h = Hashtbl.create 37 in
@@ -23,7 +23,7 @@ struct
         handle_error (fun s -> Printf.eprintf "%s\n%!" s)
           (Image.load img_name >>= fun img ->
            return (Hashtbl.replace h k img))
-      with Toml.Value.To.Bad_type _ -> Printf.eprintf "Toml: value ti bad type\n%!"
+      with Toml.Value.To.Bad_type _ -> Printf.eprintf "Toml: value to bad type\n%!"
     );
     h
 

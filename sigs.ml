@@ -137,7 +137,7 @@ module type ImageStore_sig = sig
   (** [load st path] loads an image store into memory.
 
       - If [path] points to a directory, then the store described by
-        [path]/imagestore.toml is loaded;
+        [path]/images.store is loaded;
       - If [path] points to a file, the file is parsed as Toml and used
         as describing a store.
 
