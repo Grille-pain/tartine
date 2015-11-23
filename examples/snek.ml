@@ -12,7 +12,6 @@ module T = Tartine.Run (struct
     let h = map_h * block_size
   end)
 
-
 open T.Utils
 open T.Utils.Sdl_result
 
@@ -36,6 +35,11 @@ let arrows =
     if V2.(dot u ox <> 0. && dot u oy <> 0.) then
       V2.(smul (dot u ox) ox)
     else u)
+
+let paused = ref false
+let pause =
+  T.Key.k_event Sdl.K.p
+  |> React.E.map (function `Key_down -> paused := not !paused | _ -> ())
                   
 let head = ref (Dllist.create (V2.v (float (map_w / 2)) (float (map_h / 2))))
 let head_dir = ref V2.ox
@@ -57,20 +61,23 @@ let main =
   |> React.E.map (fun _ ->
     let a = React.S.value arrows in
     head_dir := if a = V2.zero then !head_dir else a;
-    if !count >= !frames_per_tick then (
-      count := 0;
-      let new_head = V2.add (Dllist.get !head) !head_dir in
-      head := Dllist.prepend !head new_head;
-      if new_head = !apple then (
-        apple := new_apple ();
-        decr frames_per_tick;
-        if !frames_per_tick < 1 then T.Engine.quit ();
+
+    if not !paused then begin
+      if !count >= !frames_per_tick then (
+        count := 0;
+        let new_head = V2.add (Dllist.get !head) !head_dir in
+        head := Dllist.prepend !head new_head;
+        if new_head = !apple then (
+          apple := new_apple ();
+          decr frames_per_tick;
+          if !frames_per_tick < 1 then T.Engine.quit ();
+        ) else (
+          Dllist.remove (Dllist.prev !head)
+        )
       ) else (
-        Dllist.remove (Dllist.prev !head)
+        incr count
       )
-    ) else (
-      incr count
-    );
+    end;
 
     T.Camera.render cam apple_block
       (T.RenderTarget.at_pos (of_grid !apple))
