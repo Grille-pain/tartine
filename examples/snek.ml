@@ -19,14 +19,12 @@ let cam = React.S.value T.Camera.screen
 
 let snake_block =
   T.Image.make
-    ~w:block_size ~h:block_size
-    0xff 0xff 0xff 0xff
+    ~w:block_size ~h:block_size Color.white
   |> handle_error failwith
 
 let apple_block =
   T.Image.make
-    ~w:block_size ~h:block_size
-    0xff 0x00 0x00 0xff
+    ~w:block_size ~h:block_size Color.red
   |> handle_error failwith
 
 let () = Random.self_init ()
