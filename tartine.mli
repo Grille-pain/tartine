@@ -33,23 +33,6 @@ module Run : functor (Init : Init_sig) -> sig
   module Screenshot : Screenshot_sig
 
   module Utils : sig
-    (** A quite useful alternative to [React.E.map], that allows the user to
-        create some initial value based on the value of the first event, and
-        hold it for every other events.
-
-        [event_map_init init f e] is [React.E.map (f (init x)) e], where [x] is
-        the first value of [e].
-
-        Note that [f] is partially applied to its first argument only once, so
-        it is safe to perform some computations on the initialization value in
-        the closure of the ['a -> 'c] resulting function; as these will be
-        performed only once.
-    *)
-    val event_map_init :
-      ('a -> 'b) ->
-      ('b -> 'a -> 'c) ->
-      'a React.E.t -> 'c React.E.t
-
     (** Some operators, useful to manipulate values of type ['a Sdl.result] *)
     module Sdl_result : sig
       val (>>=) : 'a Sdl.result -> ('a -> 'b Sdl.result) -> 'b Sdl.result

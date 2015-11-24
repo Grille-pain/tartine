@@ -35,13 +35,3 @@ module Filename = struct
 
   let (^/) = Filename.concat
 end
-
-let event_map_init
-    (init: 'a -> 'b)
-    (f: 'b -> 'a -> 'c)
-    (e: 'a React.E.t):
-  'c React.E.t
-  =
-  React.E.map init (React.E.once e)
-  |> React.E.map (fun init_value -> React.E.map (f init_value) e)
-  |> React.E.switch React.E.never
