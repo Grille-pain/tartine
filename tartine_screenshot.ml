@@ -21,7 +21,7 @@ module Make (Engine: Engine_sig) = struct
     in
     if Sys.file_exists screenshots_dir_name then
       if not (Sys.is_directory screenshots_dir_name) then
-        `Error ("\"" ^ screenshots_dir_name ^ "\"" ^ " exists but is not a directory")
+        Error (`Msg ("\"" ^ screenshots_dir_name ^ "\"" ^ " exists but is not a directory"))
       else
         fresh ()
     else (

@@ -5,17 +5,17 @@ module Sdl_result = struct
       (r: a Sdl.result)
       (f: a -> b Sdl.result): b Sdl.result =
     match r with
-    | `Ok x -> f x
-    | `Error err -> `Error err
+    | Result.Ok x -> f x
+    | Result.Error err -> Result.Error err
 
   let handle_error (type a)
       (f: string -> a)
       (r: a Sdl.result): a =
     match r with
-    | `Ok x -> x
-    | `Error err -> f err
+    | Result.Ok x -> x
+    | Result.Error (`Msg err) -> f err
 
-  let return x = `Ok x
+  let return x = Result.Ok x
 end
 
 module Int32 = struct
