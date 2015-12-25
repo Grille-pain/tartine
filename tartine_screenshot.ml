@@ -1,3 +1,4 @@
+module R = Result
 open Tsdl
 open Batteries
 open Sigs
@@ -21,7 +22,8 @@ module Make (Engine: Engine_sig) = struct
     in
     if Sys.file_exists screenshots_dir_name then
       if not (Sys.is_directory screenshots_dir_name) then
-        Error (`Msg ("\"" ^ screenshots_dir_name ^ "\"" ^ " exists but is not a directory"))
+        R.Error (`Msg ("\"" ^ screenshots_dir_name ^ "\""
+                       ^ " exists but is not a directory"))
       else
         fresh ()
     else (
