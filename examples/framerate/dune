@@ -1,0 +1,6 @@
+(executable
+ (name framerate)
+ (modules Framerate)
+ (libraries tartine)
+ (promote (until-clean)))
+

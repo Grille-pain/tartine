@@ -4,7 +4,6 @@ open Sigs
 open Tartine_utils.Sdl_result
 
 module Make (Engine : Engine_sig) = struct
-  open Engine
 
   type t = { surface: Sdl.surface; texture: Sdl.texture; size: Size2.t }
 

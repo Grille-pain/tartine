@@ -1,0 +1,6 @@
+(library
+ (name        tartine)
+ (public_name tartine)
+ (modules_without_implementation sigs)
+ (libraries tsdl react gg toml result))
+

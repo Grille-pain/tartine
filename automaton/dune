@@ -1,0 +1,4 @@
+(library
+ (name  automaton)
+ (libraries react))
+

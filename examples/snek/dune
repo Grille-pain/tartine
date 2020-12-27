@@ -1,0 +1,6 @@
+(executable
+ (name snek)
+ (modules Snek)
+ (libraries tartine)
+ (promote (until-clean)))
+

@@ -1,8 +1,5 @@
 open Tsdl
-open Gg
 open Sigs
-
-module type Init_sig = Init_sig
 
 module Init_defaults = struct
   let fullscreen = false

@@ -1,5 +1,4 @@
 open Gg
-open Batteries
 open Tsdl
 
 module type Init_sig = sig
@@ -25,6 +24,8 @@ module type Engine_sig = sig
   *)
   val tick : time React.E.t
   val post_render : time React.E.t
+
+  val time : time React.S.t
 
   (** Call this to stop the engine. *)
   val run  : unit -> unit
@@ -94,7 +95,7 @@ end
 module type Camera_sig = sig
   type image_t
   type renderTarget_t
-  
+
   type t = Box2.t
 
   val with_screen_size : pos:V2.t -> t React.S.t
@@ -110,7 +111,7 @@ end
 
 module type ImageStore_sig = sig
   type image_t
-  
+
   (** ImageStore:
       Utility module aiming at loading entire directories of images at once,
       described by an on-disk configuration file.

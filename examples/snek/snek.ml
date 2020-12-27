@@ -1,6 +1,5 @@
 open Tsdl
 open Gg
-open Batteries
 
 let map_w = 20
 let map_h = 20
@@ -12,8 +11,9 @@ module T = Tartine.Run (struct
     let h = map_h * block_size
   end)
 
-open T.Utils
 open T.Utils.Sdl_result
+
+module M = Map.Make(Int)
 
 let cam = React.S.value T.Camera.screen
 
@@ -40,8 +40,12 @@ let paused = ref false
 let pause =
   T.Key.k_event Sdl.K.p
   |> React.E.map (function `Key_down -> paused := not !paused | _ -> ())
-                  
-let head = ref (Dllist.create (V2.v (float (map_w / 2)) (float (map_h / 2))))
+
+let get_head =
+  let cnt = ref 0 in
+  (fun () -> incr cnt; !cnt)
+
+let head = ref (M.add (get_head ()) (V2.v (float (map_w / 2)) (float (map_h / 2))) M.empty)
 let head_dir = ref V2.ox
 let frames_per_tick = ref 20
 
@@ -49,7 +53,7 @@ let rec new_apple () =
   let x = Random.int map_w |> float in
   let y = Random.int map_h |> float in
   let apple = V2.v x y in
-  if Dllist.exists ((=) apple) !head then new_apple () else apple
+  if M.exists (fun _ v -> v = apple) !head then new_apple () else apple
 
 let apple = ref (new_apple ())
 
@@ -65,14 +69,14 @@ let main =
     if not !paused then begin
       if !count >= !frames_per_tick then (
         count := 0;
-        let new_head = V2.add (Dllist.get !head) !head_dir in
-        head := Dllist.prepend !head new_head;
+        let new_head = V2.add (M.max_binding !head |> snd) !head_dir in
+        head := M.add (get_head ()) new_head !head;
         if new_head = !apple then (
           apple := new_apple ();
           decr frames_per_tick;
           if !frames_per_tick < 1 then T.Engine.quit ();
         ) else (
-          Dllist.remove (Dllist.prev !head)
+          head := M.remove (M.min_binding !head |> fst) !head
         )
       ) else (
         incr count
@@ -83,7 +87,7 @@ let main =
       (T.RenderTarget.at_pos (of_grid !apple))
     |> handle_error failwith;
 
-    Dllist.iter (fun pos ->
+    M.iter (fun _ pos ->
       T.Camera.render cam snake_block
         (T.RenderTarget.at_pos (of_grid pos))
       |> handle_error failwith

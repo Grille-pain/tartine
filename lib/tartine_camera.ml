@@ -1,6 +1,5 @@
 open Tsdl
 open Gg
-open Batteries
 open Sigs
 
 module Make
@@ -13,8 +12,8 @@ module Make
 struct
   let get_window_size () =
     Sdl.get_window_size Engine.window
-    |> Tuple2.mapn Float.of_int
-    |> uncurry Size2.v
+    |> (fun (w,h) -> float w, float h)
+    |> (fun (w,h) -> Size2.v w h)
 
   let window_size =
     React.S.hold
@@ -41,11 +40,11 @@ struct
     let scale_w = ww /. (Size2.w cam_size) in
     let scale_h = wh /. (Size2.h cam_size) in
     let target = RenderTarget.(
-      target >>
-      (fun p -> pos V2.(mul (p.pos - cam_pos) (v scale_w scale_h)) p) >>
-      (fun p -> size Size2.(v ((Size2.w p.size) *. scale_w)
-                              ((Size2.h p.size) *. scale_h))
-          p)
-    ) in
+        target >>
+        (fun p -> pos V2.(mul (p.pos - cam_pos) (v scale_w scale_h)) p) >>
+        (fun p -> size Size2.(v ((Size2.w p.size) *. scale_w)
+                                ((Size2.h p.size) *. scale_h))
+            p)
+      ) in
     Screen.render ?src img target
 end

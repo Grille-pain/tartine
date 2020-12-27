@@ -1,6 +1,4 @@
-open Tsdl
 open Gg
-open Batteries
 
 type params = {
   pos : V2.t;

@@ -1,0 +1,6 @@
+(executable
+ (name character)
+ (modules Character)
+ (libraries automaton tartine)
+ (promote (until-clean)))
+

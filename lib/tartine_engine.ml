@@ -1,5 +1,4 @@
 open Tsdl
-open Batteries
 open Sigs
 open Tartine_utils
 
@@ -46,7 +45,7 @@ module Make (I: Init_sig) = struct
 
   (* [update_time] must be called after the rendering/computations phase.  It
      updates the average rendering frame time, and computes - if the framerate
-     is capped - the additionnal delay. 
+     is capped - the additionnal delay.
   *)
   let update_time, get_rendering_time, get_frame_time, get_delay, print_time =
     let open Int32 in
@@ -63,10 +62,10 @@ module Make (I: Init_sig) = struct
        let average_rendering_time = get_average_rendering_time () in
        let min_delay = if average_rendering_time = 0l then 1l else 0l in
        begin match I.fps_cap with
-        | None -> delay := min_delay
-        | Some fps -> delay := max
-              ((1000l / of_int fps) - average_rendering_time)
-              min_delay
+         | None -> delay := min_delay
+         | Some fps -> delay := max
+               ((1000l / of_int fps) - average_rendering_time)
+               min_delay
        end;
        after_rendering_total_time := current_time),
     (fun () -> get_average_rendering_time ()),
@@ -121,6 +120,8 @@ module Make (I: Init_sig) = struct
 
   let post_render, send_post_render = React.E.create ()
 
+  let time = React.S.hold { frame_time = 0l; total_time = 0l } tick
+
   (****************************************************************************)
 
   let event ty field =
@@ -156,10 +157,10 @@ module Make (I: Init_sig) = struct
       (try EventsH.find events_s_table event_typ
            |> List.map fst
            |> List.iter ((|>) ev);
-        with Not_found -> ());
+       with Not_found -> ());
     done;
     EventsH.iter (fun _ l ->
-      List.iter (fun (_, send_recorded) -> send_recorded ()) l)
+        List.iter (fun (_, send_recorded) -> send_recorded ()) l)
       events_s_table
 
   let quit () =
@@ -169,8 +170,7 @@ module Make (I: Init_sig) = struct
 
   (* Main event loop **********************************************************)
 
-  let event_loop r w =
-    let open Int32 in
+  let event_loop r _w =
     let open Sdl_result in
     let ev = Sdl.Event.create () in
     let rec loop () =

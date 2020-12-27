@@ -3,7 +3,7 @@ open Batteries
 
 let input_images = ref []
 let output_name = ref "pack"
-    
+
 let () =
   Arg.parse [
     "-o", Arg.Set_string output_name, "Base name for the output pack image and toml files";
@@ -21,7 +21,7 @@ let to_rgba = function
 let () =
   if !input_images = [] then
     exit 0;
-  
+
   let imgs = !input_images |> List.map (fun name ->
     (Filename.basename name |> Filename.chop_extension,
      Images.load name [] |> to_rgba))
@@ -36,14 +36,14 @@ let () =
   Printf.printf "Packing size: %dx%d\n%!"
     (Size2.w packing_size |> truncate)
     (Size2.h packing_size |> truncate);
-  
+
   let output_img =
     Images.Rgba32 (
       Rgba32.create
         (truncate (Size2.w packing_size))
         (truncate (Size2.h packing_size))
     ) in
-  let output_toml = ref Toml.Table.empty in
+  let output_toml = ref TomlTypes.Table.empty in
 
   Packing.iter (fun (name, img) rect ->
     let x, y, w, h = (
@@ -52,12 +52,12 @@ let () =
       Box2.w rect,
       Box2.h rect
     ) |> Tuple4.mapn truncate in
-      
-    output_toml := Toml.Table.add
-        (Toml.Table.Key.of_string name)
-        (Toml.of_int_array [x; y; w; h])
+
+    output_toml := TomlTypes.Table.add
+        (TomlTypes.Table.Key.bare_key_of_string name)
+        (TomlTypes.TArray (TomlTypes.NodeInt [x; y; w; h]))
         !output_toml;
-    
+
     Images.blit img 0 0 output_img x y w h
   ) packing;
 

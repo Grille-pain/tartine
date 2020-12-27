@@ -1,0 +1,9 @@
+(library
+ (name packing)
+ (modules Packing)
+ (libraries batteries gg))
+
+(executable
+ (name pack_images)
+ (modules Pack_images)
+ (libraries batteries gg toml camlimages.all_formats packing))

@@ -1,6 +1,5 @@
 open Tsdl
 open Gg
-open Batteries
 open Sigs
 
 module Make (Engine: Engine_sig) = struct
@@ -15,11 +14,11 @@ module Make (Engine: Engine_sig) = struct
   let k keycode = s (Sdl.get_scancode_from_key keycode)
 
   let s_event scancode =
-    let down : [`Key_up | `Key_down] React.E.t = 
+    let down : [`Key_up | `Key_down] React.E.t =
       Engine.event Sdl.Event.key_down Sdl.Event.keyboard_scancode
       |> React.E.fmap (fun sc -> if sc = scancode then Some `Key_down else None) in
 
-    let up : [`Key_up | `Key_down] React.E.t = 
+    let up : [`Key_up | `Key_down] React.E.t =
       Engine.event Sdl.Event.key_up Sdl.Event.keyboard_scancode
       |> React.E.fmap (fun sc -> if sc = scancode then Some `Key_up else None) in
 
@@ -51,8 +50,8 @@ module Make (Engine: Engine_sig) = struct
     |> List.map (fun (code, v) -> if s code then v else V2.zero)
     |> List.fold_left V2.add V2.zero
 
-  let wasd keys =
-    let (w_e, a_e, s_e, d_e) = Tuple4.mapn s_event keys in
+  let wasd (w,a,s,d as keys) =
+    let w_e, a_e, s_e, d_e = s_event w, s_event a, s_event s, s_event d in
     let e = React.E.select [w_e; a_e; s_e; d_e] in
     React.S.fold (fun _ _ -> wasd_value keys) V2.zero e
 end

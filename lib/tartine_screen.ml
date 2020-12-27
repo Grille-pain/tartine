@@ -1,6 +1,5 @@
 open Tsdl
 open Gg
-open Batteries
 open Sigs
 
 module Make
@@ -28,19 +27,19 @@ struct
     Sdl.Point.create ~x ~y
 
   let render ?src img target =
-    let src = src |? Box2.v V2.zero img.Image.size |> box2_to_sdl in
+    let src = Option.value src ~default:(Box2.v V2.zero img.Image.size) |> box2_to_sdl in
     let p = target img.Image.size in
-    
+
     let dst = box2_to_sdl (Box2.v
                              p.RenderTarget.pos
                              p.RenderTarget.size) in
     let center = Some (v2_to_sdl p.RenderTarget.center) in
     let flip = Sdl.Flip.(
-      (if p.RenderTarget.hflip then Sdl.Flip.horizontal else Sdl.Flip.none)
-      + (if p.RenderTarget.vflip then Sdl.Flip.vertical else Sdl.Flip.none)
-    ) in
+        (if p.RenderTarget.hflip then Sdl.Flip.horizontal else Sdl.Flip.none)
+        + (if p.RenderTarget.vflip then Sdl.Flip.vertical else Sdl.Flip.none)
+      ) in
 
-    if Float.abs p.RenderTarget.angle < 0.01 && flip = Sdl.Flip.none then
+    if abs_float p.RenderTarget.angle < 0.01 && flip = Sdl.Flip.none then
       Sdl.render_copy ~src ~dst Engine.renderer
         img.Image.texture
     else

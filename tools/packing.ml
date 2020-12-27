@@ -17,7 +17,7 @@ let rec insert (p: 'a t) (elt: 'a) (sz: Size2.t) =
        Node (nrect, insert lp elt sz, rp)
      with Full ->
        Node (nrect, lp, insert rp elt sz))
-  | Leaf (lrect, Some _) -> raise Full
+  | Leaf (_, Some _) -> raise Full
   | Leaf (lrect, None) ->
     if Size2.w sz > Box2.w lrect || Size2.h sz > Box2.h lrect then
       raise Full
