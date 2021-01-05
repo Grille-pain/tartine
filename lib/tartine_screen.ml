@@ -4,8 +4,7 @@ open Sigs
 
 module Make
     (Engine: Engine_sig)
-    (Image: Image_sig)
-    (RenderTarget: RenderTarget_sig) =
+    (Image: Image_sig) =
 struct
   let box2_to_sdl rect =
     let x = truncate @@ Box2.ox rect in
@@ -26,25 +25,30 @@ struct
     let y = truncate (V2.y point) in
     Sdl.Point.create ~x ~y
 
-  let render ?src img target =
-    let src = Option.value src ~default:(Box2.v V2.zero img.Image.size) |> box2_to_sdl in
-    let p = target img.Image.size in
+  type t = unit
 
-    let dst = box2_to_sdl (Box2.v
-                             p.RenderTarget.pos
-                             p.RenderTarget.size) in
-    let center = Some (v2_to_sdl p.RenderTarget.center) in
-    let flip = Sdl.Flip.(
-        (if p.RenderTarget.hflip then Sdl.Flip.horizontal else Sdl.Flip.none)
-        + (if p.RenderTarget.vflip then Sdl.Flip.vertical else Sdl.Flip.none)
-      ) in
+  let default = React.S.const ()
 
-    if abs_float p.RenderTarget.angle < 0.01 && flip = Sdl.Flip.none then
-      Sdl.render_copy ~src ~dst Engine.renderer
-        img.Image.texture
-    else
-      Sdl.render_copy_ex
-        ~src ~dst
-        Engine.renderer img.Image.texture
-        p.RenderTarget.angle center flip
+  let render img
+      ?(src=Box2.v V2.zero img.Image.size)
+      ?(dst=V2.zero)
+      ?(transform=Image.default (Box2.size src))
+      () =
+    let dst = box2_to_sdl
+        (Box2.v dst
+           Size2.(v ((Box2.w src) *. transform.Image.wscale)
+                    ((Box2.h src) *. transform.Image.hscale))) in
+    let src = box2_to_sdl src in
+    let center = Some (v2_to_sdl transform.Image.center) in
+    let flip =
+      Sdl.Flip.(+)
+        (if transform.Image.hflip then Sdl.Flip.horizontal else Sdl.Flip.none)
+        (if transform.Image.vflip then Sdl.Flip.vertical else Sdl.Flip.none)
+    in
+
+    Sdl.render_copy_ex
+      ~src ~dst
+      Engine.renderer img.Image.texture
+      transform.Image.angle center flip
+
 end

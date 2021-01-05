@@ -83,29 +83,28 @@ let step =
 let step = IntAutomaton.run step time React.E.never |> fst
 
 let render_target col dir step =
-  let open T.RenderTarget in
   let y =
     match col with
     | Color.Red -> 0.
-    | Color.Green -> -160.
-    | Color.Blue -> -320.
+    | Color.Green -> 16.
+    | Color.Blue -> 32.
   in
   let x =
     match dir with
-    | Direction.Up -> -.(160. +. (float step) *. 480.)
-    | Direction.Down -> -.((float step) *. 480.)
-    | Direction.Left -> -.(320. +. (float step) *. 480.)
-    | Direction.Right -> -.(480. -. (float step) *. 480.)
+    | Direction.Up -> 16. +. (float step) *. 48.
+    | Direction.Down -> (float step) *. 48.
+    | Direction.Left | Direction.Right -> 32. +. (float step) *. 48.
+    (*| Direction.Right -> -.(48. -. (float step) *. 48.)*)
   in
-  let h =
+  let hflip =
     match dir with
     | Direction.Right -> true
     | _ -> false
   in
-  at_pos (V2.v x y) >> size (Size2.v 960. 480.) >> hflip h
+  Box2.v (V2.v x y) (Size2.v 16. 16.), T.Image.{ (default (Size2.v 16. 16.)) with hflip }
 
 let render_target =
-  React.S.l3 ~eq:(fun r1 r2 -> r1 (Size2.v 0. 0.) = r2 (Size2.v 0. 0.))
+  React.S.l3
     (fun col dir step -> render_target (fst col) (fst dir) (fst step))
     color direction step
 
@@ -114,8 +113,12 @@ let img =
   | Error _ -> assert false
   | Ok img -> img
 
+let camera = React.S.map (T.Camera.resize (Size2.v 16. 16.)) T.Camera.default
+
 let main =
   T.Engine.tick
-  |> React.E.map (fun _ -> T.Screen.render img (React.S.value render_target))
+  |> React.E.map (fun _ ->
+      let src, transform = React.S.value render_target in
+      T.Camera.render img ~src ~transform (React.S.value camera))
 
 let () = T.Engine.run ()

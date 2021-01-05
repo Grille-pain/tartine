@@ -15,8 +15,6 @@ open T.Utils.Sdl_result
 
 module M = Map.Make(Int)
 
-let cam = React.S.value T.Camera.screen
-
 let snake_block =
   T.Image.make
     ~w:block_size ~h:block_size Color.white
@@ -27,71 +25,93 @@ let apple_block =
     ~w:block_size ~h:block_size Color.red
   |> handle_error failwith
 
-let () = Random.self_init ()
-
-let arrows =
-  T.Key.wasd Sdl.Scancode.(up, left, down, right)
-  |> React.S.map (fun u ->
-    if V2.(dot u ox <> 0. && dot u oy <> 0.) then
-      V2.(smul (dot u ox) ox)
-    else u)
-
-let paused = ref false
-let pause =
-  T.Key.k_event Sdl.K.p
-  |> React.E.map (function `Key_down -> paused := not !paused | _ -> ())
-
-let get_head =
-  let cnt = ref 0 in
-  (fun () -> incr cnt; !cnt)
-
-let head = ref (M.add (get_head ()) (V2.v (float (map_w / 2)) (float (map_h / 2))) M.empty)
-let head_dir = ref V2.ox
 let frames_per_tick = ref 20
 
-let rec new_apple () =
+let count =
+  let count = ref 0 in
+  React.E.fmap (fun _ ->
+      if !count < !frames_per_tick
+      then (incr count; None)
+      else (count := 0; Some ()))
+    T.Engine.tick
+
+let arrows =
+  React.S.fmap (fun u ->
+      if V2.x u <> 0. then Some V2.(smul (dot u ox) ox)
+      else if V2.y u <> 0. then Some V2.(smul (dot u oy) oy)
+      else None)
+    V2.ox
+    (T.Key.wasd Sdl.Scancode.(up, left, down, right))
+
+let pause =
+  T.Key.k_event Sdl.K.space
+  |> React.E.map (function `Key_down -> true | `Key_up -> false)
+  |> React.S.hold false
+
+type snek = {
+  direction : V2.t;
+  body      : V2.t M.t;
+}
+
+let initial = {
+  direction = V2.ox;
+  body = M.singleton 0 (V2.v (float (map_w / 2)) (float (map_h / 2)));
+}
+
+let new_snek =
+  let cnt = ref 0 in
+  (fun snek ->
+     incr cnt;
+     let x, y =
+       M.max_binding snek.body |> snd
+       |> V2.add snek.direction
+       |> V2.add (V2.v (float map_w) (float map_h))
+       |> V2.to_tuple
+     in
+     { snek with
+       body =
+         M.add !cnt
+           Stdlib.Float.(V2.v (rem x (float map_w)) (rem y (float map_h)))
+           snek.body
+     })
+
+let rec new_apple snek =
   let x = Random.int map_w |> float in
   let y = Random.int map_h |> float in
   let apple = V2.v x y in
-  if M.exists (fun _ v -> v = apple) !head then new_apple () else apple
-
-let apple = ref (new_apple ())
+  if M.exists (fun _ v -> v = apple) snek.body
+  then new_apple snek else apple
 
 let of_grid pos = V2.smul (float block_size) pos
 
+let snek_apple =
+  React.S.fold
+    (fun (snek, apple) _ ->
+       if not (React.S.value pause) then begin
+         let snek = new_snek { snek with direction = React.S.value arrows } in
+         if M.max_binding snek.body |> snd = apple then begin
+           decr frames_per_tick;
+           snek, new_apple snek
+         end
+         else { snek with body = M.remove (M.min_binding snek.body |> fst) snek.body }, apple
+       end
+       else snek, apple)
+    (initial, new_apple initial)
+    count
+
 let main =
-  let count = ref 0 in
-  T.Engine.tick
-  |> React.E.map (fun _ ->
-    let a = React.S.value arrows in
-    head_dir := if a = V2.zero then !head_dir else a;
+  React.S.l2
+    (fun (snek, apple) _ ->
+       if !frames_per_tick < 1 then T.Engine.quit ()
+       else begin
+         T.Screen.render apple_block ~dst:(of_grid apple) (React.S.value T.Screen.default)
+         |> handle_error failwith;
 
-    if not !paused then begin
-      if !count >= !frames_per_tick then (
-        count := 0;
-        let new_head = V2.add (M.max_binding !head |> snd) !head_dir in
-        head := M.add (get_head ()) new_head !head;
-        if new_head = !apple then (
-          apple := new_apple ();
-          decr frames_per_tick;
-          if !frames_per_tick < 1 then T.Engine.quit ();
-        ) else (
-          head := M.remove (M.min_binding !head |> fst) !head
-        )
-      ) else (
-        incr count
-      )
-    end;
-
-    T.Camera.render cam apple_block
-      (T.RenderTarget.at_pos (of_grid !apple))
-    |> handle_error failwith;
-
-    M.iter (fun _ pos ->
-      T.Camera.render cam snake_block
-        (T.RenderTarget.at_pos (of_grid pos))
-      |> handle_error failwith
-    ) !head
-  )
+         M.iter (fun _ pos ->
+             T.Screen.render snake_block ~dst:(of_grid pos) (React.S.value T.Screen.default)
+             |> handle_error failwith)
+           snek.body
+       end)
+    snek_apple T.Engine.time
 
 let () = T.Engine.run ()

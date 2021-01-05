@@ -3,93 +3,38 @@ open Sigs
 open Tartine_utils
 
 module Make (I: Init_sig) = struct
-  let smoothing_samples_nb = 10
   (* How much slower do we need to refresh textual debug informations?
      (eg. displayed fps, etc.) *)
-  let printing_speed_ratio = 3
+  let printing_speed = 100
 
   type time = { frame_time: int32; total_time: int32 }
 
-  module EventsH = Hashtbl.Make (struct
+  module SdlEventTable = Hashtbl.Make (struct
       type t = Sdl.event_type
       let hash = Hashtbl.hash
       let equal = (=)
     end)
 
-  (* Time handling ************************************************************)
+  (* Time printing ************************************************************)
 
-  let ptime render delay frame =
+  let ptime tick =
     let open Int32 in
-    let fps = if frame = 0l then 0l else 1000l / frame in
-    Printf.printf "% 8i% 8i% 8i (fps: % 4d)\r%!"
-      (to_int render)
-      (to_int delay)
-      (to_int frame)
-      (to_int fps)
-
-  let make_smoothed () =
-    let samples = Array.make smoothing_samples_nb 0l in
-    let sample_id = ref 0 in
-    let stored_samples = ref 0 in
-    let samples_sum = ref 0l in
-    let store_sample time =
-      samples_sum := Int32.(!samples_sum - samples.(!sample_id) + time);
-      samples.(!sample_id) <- time;
-      sample_id := (!sample_id + 1) mod smoothing_samples_nb;
-      if !stored_samples < smoothing_samples_nb then
-        incr stored_samples in
-    let smoothed_time () =
-      if !stored_samples = 0 then 0l
-      else Int32.(!samples_sum / (of_int !stored_samples)) in
-    store_sample, smoothed_time
-
-  (* [update_time] must be called after the rendering/computations phase.  It
-     updates the average rendering frame time, and computes - if the framerate
-     is capped - the additionnal delay.
-  *)
-  let update_time, get_rendering_time, get_frame_time, get_delay, print_time =
-    let open Int32 in
-    let after_rendering_total_time = ref 0l in
-    let delay = ref 0l in
-    let store_rendering_time, get_average_rendering_time = make_smoothed () in
-    let store_frame_time, get_average_frame_time = make_smoothed () in
-    (fun () ->
-       let current_time = Sdl.get_ticks () in
-       let last_frame_time = current_time - !after_rendering_total_time in
-       let last_frame_rendering_time = last_frame_time - !delay in
-       store_frame_time last_frame_time;
-       store_rendering_time last_frame_rendering_time;
-       let average_rendering_time = get_average_rendering_time () in
-       let min_delay = if average_rendering_time = 0l then 1l else 0l in
-       begin match I.fps_cap with
-         | None -> delay := min_delay
-         | Some fps -> delay := max
-               ((1000l / of_int fps) - average_rendering_time)
-               min_delay
-       end;
-       after_rendering_total_time := current_time),
-    (fun () -> get_average_rendering_time ()),
-    (fun () -> get_average_frame_time ()),
-    (fun () -> !delay),
-    (fun () ->
-       ptime
-         (get_average_rendering_time ())
-         !delay
-         (get_average_frame_time ()))
+    let tick_fps = if tick.frame_time = 0l then 0l else 1000l / tick.frame_time in
+    Printf.printf "% 4i (fps: % 4d)\r%!"
+      (to_int tick.frame_time)
+      (to_int tick_fps)
 
   let slow_print_time =
-    let tick_count = ref 0 in
-    fun st ->
-      if !tick_count >= printing_speed_ratio then (
-        tick_count := 0;
-        print_time ()
-      ); incr tick_count;
-      st
+    let count = ref 0 in
+    fun real tick ->
+      if Int32.of_int (!count * printing_speed) < real.total_time then (
+        incr count;
+        ptime tick)
 
   (* Runtime data *************************************************************)
 
-  let events_table = EventsH.create 255
-  let events_s_table = EventsH.create 255
+  let events_table = SdlEventTable.create 255
+  let signals_table = SdlEventTable.create 255
 
   let do_quit = ref false
 
@@ -114,28 +59,36 @@ module Make (I: Init_sig) = struct
       (if I.fullscreen then Sdl.Window.(fullscreen + I.flags) else I.flags)
     |> handle_error failwith
 
-  let tick, send_tick =
-    let tick, send_tick = React.E.create () in
-    React.E.map slow_print_time tick, send_tick
+  let real_tick, send_real_tick = React.E.create ()
 
-  let post_render, send_post_render = React.E.create ()
+  let tick =
+    let open Int32 in
+    React.E.fold (fun tick real_tick ->
+        slow_print_time tick real_tick;
+        let frame_time = (3l * tick.frame_time + real_tick.frame_time) / 4l in
+        let total_time = tick.total_time + frame_time in
+        { frame_time; total_time })
+      { frame_time = 0l; total_time = 0l }
+      real_tick
 
   let time = React.S.hold { frame_time = 0l; total_time = 0l } tick
+
+  let post_render, send_post_render = React.E.create ()
 
   (****************************************************************************)
 
   let event ty field =
     let handlers =
-      try EventsH.find events_table ty with Not_found -> []
+      try SdlEventTable.find events_table ty with Not_found -> []
     in
     let e, send_e = React.E.create () in
     let handle sdl_e = Sdl.Event.get sdl_e field |> send_e in
-    EventsH.replace events_table ty (handle :: handlers);
+    SdlEventTable.replace events_table ty (handle :: handlers);
     e
 
   let event_this_frame ty field =
     let handlers =
-      try EventsH.find events_s_table ty with Not_found -> []
+      try SdlEventTable.find signals_table ty with Not_found -> []
     in
     let s, send_s = React.S.create [] in
     let record_ev, send_recorded =
@@ -143,8 +96,8 @@ module Make (I: Init_sig) = struct
       (fun sdl_e -> mem := (Sdl.Event.get sdl_e field) :: !mem),
       (fun () -> send_s !mem; mem := [])
     in
-    EventsH.replace events_s_table ty
-      ((record_ev, send_recorded)::handlers);
+    SdlEventTable.replace signals_table ty
+      ((record_ev, send_recorded) :: handlers);
     s
 
   let send_events ev =
@@ -152,16 +105,16 @@ module Make (I: Init_sig) = struct
     while Sdl.poll_event (Some ev) do
       if Sdl.Event.(get ev typ = quit) then do_quit := true;
       let event_typ = Sdl.Event.(get ev typ) in
-      (try EventsH.find events_table event_typ |> List.iter ((|>) ev)
+      (try SdlEventTable.find events_table event_typ |> List.iter ((|>) ev)
        with Not_found -> ());
-      (try EventsH.find events_s_table event_typ
+      (try SdlEventTable.find signals_table event_typ
            |> List.map fst
            |> List.iter ((|>) ev);
        with Not_found -> ());
     done;
-    EventsH.iter (fun _ l ->
+    SdlEventTable.iter (fun _ l ->
         List.iter (fun (_, send_recorded) -> send_recorded ()) l)
-      events_s_table
+      signals_table
 
   let quit () =
     let e = Sdl.Event.create () in
@@ -170,23 +123,21 @@ module Make (I: Init_sig) = struct
 
   (* Main event loop **********************************************************)
 
-  let event_loop r _w =
+  let event_loop renderer _window =
     let open Sdl_result in
-    let ev = Sdl.Event.create () in
-    let rec loop () =
-      let frame = get_frame_time () in
-      send_events ev;
-      send_tick { frame_time = frame; total_time = Sdl.get_ticks () };
+    let event = Sdl.Event.create () in
+    let rec loop before after =
+      let time = Int32.{ frame_time = max (after - before) 1l; total_time = after } in
+      send_events event;
+      send_real_tick time;
+      send_post_render time;
       ignore (Gc.major_slice 0);
-      send_post_render { frame_time = frame; total_time = Sdl.get_ticks () };
-      Sdl.render_present r;
-      Sdl.render_clear r >>= fun () ->
-      update_time ();
-      let delay = get_delay () in
-      if delay > 0l then Sdl.delay delay;
-      if not !do_quit then loop () else return ();
+      Sdl.render_present renderer;
+      Sdl.render_clear renderer >>= fun () ->
+      Sdl.delay 1l;
+      if not !do_quit then loop after (Sdl.get_ticks ()) else return ();
     in
-    loop ()
+    loop 0l (Sdl.get_ticks ())
 
   let cleanup_and_quit r w =
     Sdl.destroy_renderer r;
@@ -199,4 +150,5 @@ module Make (I: Init_sig) = struct
     event_loop renderer window
     |> Sdl_result.handle_error (Printf.eprintf "%s\n%!");
     cleanup_and_quit renderer window
+
 end

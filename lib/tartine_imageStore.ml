@@ -19,16 +19,19 @@ struct
      | `Ok table ->
        TomlTypes.Table.iter
          (fun k v ->
-            (*try*)
-            let img_name = Filename.(dir ^/ Toml.Printer.string_of_value v) in
-            let k = TomlTypes.Table.Key.to_string k in
-            handle_error (fun s -> Printf.eprintf "%s\n%!" s)
-              (Image.load img_name >>= fun img ->
-               return (Hashtbl.replace h k img))
-              (*with _ -> Printf.eprintf "Toml: value to bad type\n%!"*))
+            match v with
+            | TomlTypes.TString string ->
+              let k = TomlTypes.Table.Key.to_string k in
+              let img_name = Filename.(dir ^/ string) in
+              handle_error
+                (fun s -> Printf.eprintf "%s\n%!" s)
+                (Image.load img_name >>= fun img ->
+                 return (Hashtbl.replace h k img))
+            | _ -> Printf.eprintf "Toml: value to bad type\n%!")
          table
      | `Error (string, _) -> Printf.eprintf "Toml: %s" string);
     h
 
   let find k table = Hashtbl.find table k
+
 end

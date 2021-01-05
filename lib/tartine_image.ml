@@ -17,7 +17,7 @@ module Make (Engine : Engine_sig) = struct
     let b = Int32.of_float (Color.b col *. 255.) in
     let a = Int32.(shift_left (of_float (Color.a col *. 255.)) 24) in
     let color = Int32.(r |> logor g |> logor b |> logor a) in
-    
+
     Sdl.create_rgb_surface ~w ~h ~depth:32
       0x00ff0000l 0x0000ff00l 0x000000ffl 0xff000000l >>= fun surface ->
     Sdl.fill_rect surface None color >>= fun () ->
@@ -36,4 +36,24 @@ module Make (Engine : Engine_sig) = struct
     let t = { surface; texture; size } in
     Gc.finalise free_t t;
     return t
+
+  type transform = {
+    center : V2.t;
+    angle  : float;
+    wscale : float;
+    hscale : float;
+    hflip  : bool;
+    vflip  : bool;
+  }
+
+
+  let default size = {
+    center = V2.v (Size2.w size /. 2.) (Size2.h size /. 2.);
+    angle  = 0.;
+    wscale = 1.;
+    hscale = 1.;
+    hflip  = false;
+    vflip  = false;
+  }
+
 end

@@ -1,7 +1,5 @@
-open Batteries
 open Tsdl
 open Gg
-open Tartine
 
 module T = Tartine.Run (struct
     include Tartine.Init_defaults
@@ -14,19 +12,15 @@ open T.Utils.Sdl_result
 module Event = Sdl.Event
 module Scancode = Sdl.Scancode
 
-let move v step pos =
-  v |> V2.smul step |> V2.add pos
+let step time = (Int32.to_float time.T.Engine.frame_time) /. 2.
 
 let arrows =
   T.Key.wasd Scancode.(up, left, down, right)
   |> React.S.map (fun v -> if v <> V2.zero then V2.unit v else v)
 
-let wasd = 
+let wasd =
   T.Key.wasd Scancode.(w, a, s, d)
   |> React.S.map (fun v -> if v <> V2.zero then V2.unit v else v)
-
-let move_square step pos = move (React.S.value arrows) step pos
-let move_camera step pos = move (React.S.value wasd) step pos
 
 let escape =
   T.Key.s_event Scancode.escape |> React.E.map (fun _ -> T.Engine.quit ())
@@ -36,28 +30,38 @@ let f12 = T.Key.s_event_this_frame Scancode.f12
 let screenshot =
   T.Engine.post_render
   |> React.E.map (fun _ ->
-    match React.S.value f12 with
-    | Some `Key_down ->
-      T.Screenshot.take () |> handle_error print_endline
-    | _ -> ())
+      match React.S.value f12 with
+      | Some `Key_down ->
+        T.Screenshot.take () |> handle_error print_endline
+      | _ -> ())
 
-let imgstore = T.ImageStore.load "examples/images"
+let imgstore = T.ImageStore.load "examples/basic/"
+
+let square = T.ImageStore.find "square" imgstore
+let map = T.ImageStore.find "discworld_map" imgstore
+
+let box =
+  React.S.fold
+    (fun box time ->
+       Box2.move (V2.smul (step time) (React.S.value wasd)) box)
+    (Box2.v (V2.v 150. 150.) square.T.Image.size)
+    T.Engine.tick
+
+let camera =
+  React.S.fold
+    (fun camera time ->
+       let box = React.S.value box in
+       camera
+       |> T.Camera.shift_by (V2.smul (step time) (React.S.value arrows))
+       |> T.Camera.follow ~border:(V2.smul 2. (Box2.size box)) (Box2.mid box))
+    (React.S.value T.Camera.default)
+    T.Engine.tick
 
 let main =
-  T.Engine.tick
-  |> React.E.map (
-    let square = T.ImageStore.find "square" imgstore in
-    let map = T.ImageStore.find "discworld_map" imgstore in
-    let square_pos, camera_pos = ref V2.(v 150. 150.), ref V2.zero in
-    let square_size = Size2.v 64. 48. in
-    fun tm ->
-      let step = (Int32.to_float tm.T.Engine.frame_time) /. 2. in
-      square_pos := move_square step !square_pos;
-      camera_pos := move_camera step !camera_pos;
-      camera_pos := T.Camera.follow ~pos:!camera_pos ~border:100.
-          (!square_pos, square_size);
-      let camera_transform = T.Camera.transform ~pos:!camera_pos in
-      T.Screen.(render map ~pos:V2.zero camera_transform) >>= fun () ->
-      T.Screen.(render square ~pos:!square_pos ~size:square_size camera_transform))
+  React.S.l3
+    (fun box camera _ ->
+       T.Camera.render map camera >>= fun () ->
+       T.Camera.render square ~dst:(Box2.o box) camera)
+    box camera T.Engine.time
 
 let () = T.Engine.run ()

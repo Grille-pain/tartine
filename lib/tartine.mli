@@ -14,19 +14,17 @@ module Run : functor (Init : Init_sig) -> sig
 
   module Image : Image_sig
 
-  module RenderTarget : RenderTarget_sig
+  module Screen : Screen_sig
+    with type image_t := Image.t
+     and type transform_t := Image.transform
 
-  module Screen : Screen_sig with
-    type image_t := Image.t with
-    type renderTarget_t := RenderTarget.t
+  module Camera : Camera_sig
+    with type image_t := Image.t
+     and type transform_t := Image.transform
 
-  module Camera : Camera_sig with
-    type image_t := Image.t with
-    type renderTarget_t := RenderTarget.t
+  module ImageStore : ImageStore_sig
+    with type image_t := Image.t
 
-  module ImageStore : ImageStore_sig with
-    type image_t := Image.t
-    
   module Screenshot : Screenshot_sig
 
   module Utils : sig

@@ -1,0 +1,6 @@
+(executable
+ (name basic)
+ (modules Basic)
+ (libraries tartine)
+ (promote (until-clean)))
+

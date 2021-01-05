@@ -4,7 +4,6 @@ open Tsdl
 module type Init_sig = sig
   val fullscreen : bool
   val flags : Sdl.Window.flags
-  val fps_cap : int option
   val w : int
   val h : int
 end
@@ -56,57 +55,44 @@ module type Image_sig = sig
                      size: Size2.t }
   val make : w:int -> h:int -> Color.t -> t Sdl.result
   val load : string -> t Sdl.result
-end
 
-module type RenderTarget_sig = sig
-  type params = {
-    pos    : V2.t;
-    size   : Size2.t;
-
+  type transform = {
     center : V2.t;
     angle  : float;
+    wscale : float;
+    hscale : float;
     hflip  : bool;
     vflip  : bool;
   }
 
-  type t = Size2.t -> params
+  val default : Size2.t -> transform
+end
 
-  val at_pos : V2.t -> t
-  val (>>)   : t -> (params -> params) -> t
+module type Renderer_sig = sig
+  type t
+  type image_t
+  type transform_t
 
-  val pos    : V2.t    -> params -> params
-  val size   : Size2.t -> params -> params
-  val center : V2.t    -> params -> params
-  val angle  : float   -> params -> params
-  val hflip  : bool    -> params -> params
-  val vflip  : bool    -> params -> params
+  val default : t React.S.t
+
+  val render :
+    image_t -> ?src:Box2.t -> ?dst:V2.t -> ?transform:transform_t -> t ->
+    unit Sdl.result
 end
 
 module type Screen_sig = sig
-  type image_t
-  type renderTarget_t
-
-  val render :
-    ?src:Box2.t ->
-    image_t -> renderTarget_t ->
-    unit Sdl.result
+  include Renderer_sig
 end
 
 module type Camera_sig = sig
-  type image_t
-  type renderTarget_t
+  include Renderer_sig
 
-  type t = Box2.t
+  val move_to  : V2.t -> t -> t
+  val shift_by : V2.t -> t -> t
 
-  val with_screen_size : pos:V2.t -> t React.S.t
-  val screen : t React.S.t
+  val resize : Size2.t -> t -> t
 
-  val render :
-    t ->
-    ?src:Box2.t ->
-    image_t -> renderTarget_t ->
-    unit Sdl.result
-
+  val follow : V2.t -> ?border:Size2.t -> t -> t
 end
 
 module type ImageStore_sig = sig
