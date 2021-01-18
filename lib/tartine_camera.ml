@@ -7,7 +7,8 @@ module Make
     (Image: Image_sig)
     (Screen: Screen_sig
      with type image_t := Image.t
-      and type transform_t := Image.transform) =
+      and type transform_t := Image.transform
+      and type renderable_t := Engine.renderable) =
 struct
 
   let get_window_size () =

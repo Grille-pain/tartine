@@ -14,34 +14,50 @@ module type Engine_sig = sig
   val renderer : Sdl.renderer
   val window : Sdl.window
 
+  type renderable = {
+    texture : Sdl.texture;
+    src     : Sdl.rect;
+    dst     : Sdl.rect;
+    angle   : float;
+    center  : Sdl.point option;
+    flip    : Sdl.flip;
+  }
+
+  val render : renderable list React.S.t -> unit
+
   (** Obtain a react event corresponding to some SDL event. *)
-  val event : Sdl.event_type -> 'b Sdl.Event.field -> 'b React.E.t
-  val event_this_frame : Sdl.event_type -> 'b Sdl.Event.field -> 'b list React.S.t
+  val event : Sdl.event_type -> 'a Sdl.Event.field -> 'a React.E.t
+  val event_this_frame : Sdl.event_type -> 'a Sdl.Event.field -> 'a list React.S.t
 
-  (** The event corresponding to the main loop. Emits one event per frame,
-      i.e. 60 events per second.
+  val keyboard_state : bool React.S.t array
+
+  (** Signal and events corresponding to the main loop. For each frame :
+    * 0) The renderer is cleared ;
+    * 1) The time signal is updated ;
+    * 2) SDL events are pushed ;
+    * 3) A tick event is emitted ;
+    * 4) The renderer is presented ;
+    * 5) A tock event is emitted.
   *)
-  val tick : time React.E.t
-  val post_render : time React.E.t
-
   val time : time React.S.t
+  val tick : unit React.E.t
+  val tock : unit React.E.t
 
-  (** Call this to stop the engine. *)
+  (** Call this to start and stop the engine. *)
   val run  : unit -> unit
   val quit : unit -> unit
 end
 
 module type Key_sig = sig
-  val s : Sdl.scancode -> bool
-  val k : Sdl.keycode -> bool
+
+  val s_is_pressed : Sdl.scancode -> bool React.S.t
+  val k_is_pressed : Sdl.keycode  -> bool React.S.t
 
   val s_event : Sdl.scancode -> [`Key_up | `Key_down] React.E.t
-  val k_event : Sdl.keycode -> [`Key_up | `Key_down] React.E.t
+  val k_event : Sdl.keycode  -> [`Key_up | `Key_down] React.E.t
 
-  val s_event_this_frame :
-    Sdl.scancode -> [`Key_up | `Key_down ] option React.S.t
-  val k_event_this_frame :
-    Sdl.keycode -> [`Key_up | `Key_down ] option React.S.t
+  val s_event_this_frame : Sdl.scancode -> [`Key_up | `Key_down ] list React.S.t
+  val k_event_this_frame : Sdl.keycode  -> [`Key_up | `Key_down ] list React.S.t
 
   val wasd :
     Sdl.scancode * Sdl.scancode * Sdl.scancode * Sdl.scancode ->
@@ -72,12 +88,13 @@ module type Renderer_sig = sig
   type t
   type image_t
   type transform_t
+  type renderable_t
 
   val default : t React.S.t
 
   val render :
     image_t -> ?src:Box2.t -> ?dst:V2.t -> ?transform:transform_t -> t ->
-    unit Sdl.result
+    renderable_t
 end
 
 module type Screen_sig = sig

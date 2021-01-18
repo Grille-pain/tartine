@@ -45,10 +45,11 @@ struct
         (if transform.Image.hflip then Sdl.Flip.horizontal else Sdl.Flip.none)
         (if transform.Image.vflip then Sdl.Flip.vertical else Sdl.Flip.none)
     in
-
+    Engine.{ texture = img.Image.texture; src; dst; angle = transform.Image.angle; center; flip }
+(*
     Sdl.render_copy_ex
       ~src ~dst
       Engine.renderer img.Image.texture
       transform.Image.angle center flip
-
+*)
 end

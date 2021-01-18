@@ -37,8 +37,10 @@ let count =
 
 let arrows =
   React.S.fmap (fun u ->
-      if V2.x u <> 0. then Some V2.(smul (dot u ox) ox)
-      else if V2.y u <> 0. then Some V2.(smul (dot u oy) oy)
+      if V2.x u > 0. then Some V2.ox
+      else if V2.x u < 0. then Some V2.(neg ox)
+      else if V2.y u > 0. then Some V2.oy
+      else if V2.y u < 0. then Some V2.(neg oy)
       else None)
     V2.ox
     (T.Key.wasd Sdl.Scancode.(up, left, down, right))
@@ -91,6 +93,7 @@ let snek_apple =
          let snek = new_snek { snek with direction = React.S.value arrows } in
          if M.max_binding snek.body |> snd = apple then begin
            decr frames_per_tick;
+           if !frames_per_tick < 1 then T.Engine.quit ();
            snek, new_apple snek
          end
          else { snek with body = M.remove (M.min_binding snek.body |> fst) snek.body }, apple
@@ -99,19 +102,15 @@ let snek_apple =
     (initial, new_apple initial)
     count
 
-let main =
-  React.S.l2
-    (fun (snek, apple) _ ->
-       if !frames_per_tick < 1 then T.Engine.quit ()
-       else begin
-         T.Screen.render apple_block ~dst:(of_grid apple) (React.S.value T.Screen.default)
-         |> handle_error failwith;
+let renderables =
+  React.S.map
+    (fun (snek, apple) ->
+       let screen = React.S.value T.Screen.default in
+       M.fold
+         (fun _ pos list ->
+            T.Screen.render snake_block ~dst:(of_grid pos) screen :: list)
+         snek.body
+         [T.Screen.render apple_block ~dst:(of_grid apple) screen])
+    snek_apple
 
-         M.iter (fun _ pos ->
-             T.Screen.render snake_block ~dst:(of_grid pos) (React.S.value T.Screen.default)
-             |> handle_error failwith)
-           snek.body
-       end)
-    snek_apple T.Engine.time
-
-let () = T.Engine.run ()
+let () = T.Engine.run (T.Engine.render renderables)

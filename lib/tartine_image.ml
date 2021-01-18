@@ -48,7 +48,7 @@ module Make (Engine : Engine_sig) = struct
 
 
   let default size = {
-    center = V2.v (Size2.w size /. 2.) (Size2.h size /. 2.);
+    center = V2.smul 0.5 size;
     angle  = 0.;
     wscale = 1.;
     hscale = 1.;

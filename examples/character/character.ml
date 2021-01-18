@@ -101,7 +101,8 @@ let render_target col dir step =
     | Direction.Right -> true
     | _ -> false
   in
-  Box2.v (V2.v x y) (Size2.v 16. 16.), T.Image.{ (default (Size2.v 16. 16.)) with hflip }
+  Box2.v (V2.v x y) (Size2.v 16. 16.),
+  T.Image.{ (default (Size2.v 16. 16.)) with hflip ; wscale = 10.; hscale = 10. }
 
 let render_target =
   React.S.l3
@@ -109,16 +110,13 @@ let render_target =
     color direction step
 
 let img =
-  match T.Image.load "examples/character/OverworldCharacters.bmp" with
-  | Error _ -> assert false
-  | Ok img -> img
+  T.Utils.Sdl_result.handle_error failwith
+    (T.Image.load "examples/character/OverworldCharacters.bmp")
 
-let camera = React.S.map (T.Camera.resize (Size2.v 16. 16.)) T.Camera.default
+let renderables =
+  React.S.map
+    (fun (src, transform) ->
+       [T.Screen.render img ~src ~transform (React.S.value T.Screen.default)])
+    render_target
 
-let main =
-  T.Engine.tick
-  |> React.E.map (fun _ ->
-      let src, transform = React.S.value render_target in
-      T.Camera.render img ~src ~transform (React.S.value camera))
-
-let () = T.Engine.run ()
+let () = T.Engine.run (T.Engine.render renderables)

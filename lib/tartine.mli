@@ -17,10 +17,12 @@ module Run : functor (Init : Init_sig) -> sig
   module Screen : Screen_sig
     with type image_t := Image.t
      and type transform_t := Image.transform
+     and type renderable_t := Engine.renderable
 
   module Camera : Camera_sig
     with type image_t := Image.t
      and type transform_t := Image.transform
+     and type renderable_t := Engine.renderable
 
   module ImageStore : ImageStore_sig
     with type image_t := Image.t
